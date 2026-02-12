@@ -1,0 +1,12 @@
+<div>
+  <h2>Crear Roadmap</h2>
+  <div>
+    <label>Título</label><br>
+    <input [(ngModel)]="title" />
+  </div>
+  <div>
+    <label>Descripción</label><br>
+    <textarea [(ngModel)]="description"></textarea>
+  </div>
+  <button (click)="save()" [disabled]="saving">Crear</button>
+</div>

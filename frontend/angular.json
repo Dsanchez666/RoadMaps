@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json.schemastore.org/angular-cli",
+  "version": 1,
+  "projects": {
+    "roadmap-frontend": {
+      "projectType": "application",
+      "root": "",
+      "sourceRoot": "src",
+      "architect": {
+        "serve": {
+          "builder": "@angular/cli:serve",
+          "options": {
+            "browserTarget": "roadmap-frontend:build",
+            "port": 4200
+          }
+        },
+        "build": {
+          "builder": "@angular/cli:browser",
+          "options": {
+            "outputPath": "dist/roadmap-frontend",
+            "index": "src/index.html",
+            "main": "src/main.ts",
+            "polyfills": [],
+            "tsConfig": "tsconfig.app.json",
+            "assets": [
+              "src/favicon.ico",
+              "src/assets"
+            ],
+            "styles": [
+              "src/styles.scss"
+            ],
+            "scripts": []
+          }
+        }
+      }
+    }
+  }
+}

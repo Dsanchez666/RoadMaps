@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roadmap ETNA - MVP</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --certeza-comprometido: #2e7d32;
+            --certeza-planificado: #1565c0;
+            --certeza-exploratorio: #9e9e9e;
+            --bg: #fafafa;
+            --text: #222;
+            --muted: #777;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        h1 {
+            margin: 16px;
+            font-size: 1.5rem;
+        }
+
+        header {
+            background: white;
+            padding: 12px 16px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        header button {
+            padding: 8px 16px;
+            border: none;
+            background: #667eea;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        header button:hover {
+            background: #5568d3;
+        }
+
+        header .spacer {
+            flex: 1;
+        }
+
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        /* ========= IMPORT VIEW ========= */
+        .import-section {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            margin: 20px;
+            max-width: 600px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .import-section h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input[type="file"],
+        .form-group input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+            font-family: inherit;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 3px rgba(102, 126, 234, 0.3);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .button-group button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .success, .error {
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* ========= ROADMAP VIEW ========= */
+        .timeline-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: white;
+            border-bottom: 1px solid #ddd;
+            padding: 8px 16px;
+        }
+
+        .timeline-years {
+            display: grid;
+            grid-template-columns: 220px repeat(5, 4fr);
+            font-size: 0.8rem;
+            font-weight: 600;
+            align-items: center;
+            margin-bottom: 2px;
+        }
+
+        .timeline-years div {
+            text-align: center;
+            border-left: 1px solid #eee;
+            padding: 2px 0;
+        }
+
+        .timeline-years .label {
+            text-align: left;
+            border: none;
+        }
+
+        .timeline-grid {
+            display: grid;
+            grid-template-columns: 220px repeat(20, 1fr);
+            font-size: 0.75rem;
+            align-items: center;
+        }
+
+        .timeline-grid div {
+            text-align: center;
+            border-left: 1px dashed #eee;
+            padding: 2px 0;
+        }
+
+        .timeline-grid .label {
+            text-align: left;
+            border: none;
+            font-weight: 600;
+        }
+
+        .roadmap {
+            padding: 8px 16px 32px;
+        }
+
+        .eje-title {
+            margin-top: 32px;
+            padding: 8px 0;
+            border-bottom: 2px solid;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .iniciativa-row {
+            display: grid;
+            grid-template-columns: 220px repeat(20, 1fr);
+            align-items: center;
+            padding: 4px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .iniciativa-name {
+            text-align: left;
+            padding-right: 10px;
+            font-size: 0.85rem;
+        }
+
+        .iniciativa-bar {
+            height: 24px;
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.65rem;
+            font-weight: 600;
+            margin: 0 1px;
+        }
+
+        .certeza-comprometido {
+            background-color: var(--certeza-comprometido);
+        }
+
+        .certeza-planificado {
+            background-color: var(--certeza-planificado);
+        }
+
+        .certeza-exploratorio {
+            background-color: var(--certeza-exploratorio);
+        }
+
+        .legend {
+            background: white;
+            padding: 16px;
+            margin: 16px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        .legend h3 {
+            margin-bottom: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .legend-box {
+            width: 24px;
+            height: 24px;
+            border-radius: 2px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.1em;
+            color: var(--muted);
+        }
+    </style>
+</head>
+<body>
+    <!-- ========= IMPORT VIEW ========= -->
+    <div id="importView" class="view active">
+        <header>
+            <h1>🗺️ Roadmap ETNA - Importador</h1>
+        </header>
+        <div class="import-section">
+            <h2>Importar Roadmap desde JSON</h2>
+            <div id="successMsg" class="success" style="display: none;"></div>
+            <div id="errorMsg" class="error" style="display: none;"></div>
+            
+            <div class="form-group">
+                <label for="jsonFile">Selecciona archivo JSON</label>
+                <input type="file" id="jsonFile" accept=".json" onchange="previewRoadmapJson()">
+            </div>
+
+            <div id="jsonPreview" style="display: none; background: #f5f5f5; padding: 12px; border-radius: 4px; margin-bottom: 15px; max-height: 300px; overflow-y: auto; font-size: 0.85em; font-family: monospace; white-space: pre-wrap; word-break: break-all;"></div>
+
+            <div class="form-group">
+                <label for="importTitle">Título (opcional)</label>
+                <input type="text" id="importTitle" placeholder="Si está vacío, usará el valor de 'producto' del JSON">
+            </div>
+
+            <div class="button-group">
+                <button class="btn-primary" onclick="importRoadmapJson(this)">Importar</button>
+                <button class="btn-secondary" onclick="clearJsonImport()">Limpiar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========= ROADMAP VIEW ========= -->
+    <div id="roadmapView" class="view">
+        <header>
+            <button onclick="goToImport()">← Volver a importar</button>
+            <div class="spacer"></div>
+            <span id="roadmapTitle" style="font-weight: 600; font-size: 1.1em;"></span>
+            <div class="spacer"></div>
+            <button onclick="downloadRoadmap()">⬇️ Descargar JSON</button>
+        </header>
+
+        <h1 id="pageTitle"></h1>
+
+        <div class="legend">
+            <h3>Leyenda</h3>
+            <div class="legend-item">
+                <div class="legend-box certeza-comprometido"></div>
+                <span>Comprometido</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box certeza-planificado"></div>
+                <span>Planificado</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box certeza-exploratorio"></div>
+                <span>Exploratorio</span>
+            </div>
+        </div>
+
+        <div class="timeline-header">
+            <div class="timeline-years">
+                <div class="label">Iniciativas</div>
+                <div>2026</div>
+                <div>2027</div>
+                <div>2028</div>
+                <div>2029</div>
+                <div>2030</div>
+            </div>
+            <div class="timeline-grid" id="timelineQuarters"></div>
+        </div>
+
+        <div class="roadmap" id="roadmapContent"></div>
+    </div>
+
+    <script>
+        let currentRoadmapData = null;
+
+        function goToImport() {
+            document.getElementById('importView').classList.add('active');
+            document.getElementById('roadmapView').classList.remove('active');
+        }
+
+        function showMessage(msg, type) {
+            const msgEl = document.getElementById(type + 'Msg');
+            msgEl.textContent = msg;
+            msgEl.style.display = 'block';
+            setTimeout(() => msgEl.style.display = 'none', 5000);
+        }
+
+        function previewRoadmapJson() {
+            const file = document.getElementById('jsonFile').files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const json = JSON.parse(e.target.result);
+                    document.getElementById('jsonPreview').textContent = JSON.stringify(json, null, 2);
+                    document.getElementById('jsonPreview').style.display = 'block';
+
+                    if (json.producto && !document.getElementById('importTitle').value) {
+                        document.getElementById('importTitle').value = json.producto;
+                    }
+                } catch (err) {
+                    showMessage('❌ JSON inválido: ' + err.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function importRoadmapJson(btn) {
+            const file = document.getElementById('jsonFile').files[0];
+            if (!file) {
+                showMessage('Selecciona un archivo JSON', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const jsonData = JSON.parse(e.target.result);
+                    const title = document.getElementById('importTitle').value.trim() || jsonData.producto || 'Sin título';
+
+                    // Construir datos del roadmap
+                    const roadmapData = {
+                        title: title,
+                        description: jsonData.descripcion || '',
+                        producto: jsonData.producto || '',
+                        organizacion: jsonData.organizacion || '',
+                        horizonte_base: jsonData.horizonte_base || { inicio: '2026-T1', fin: '2030-T4' },
+                        ejes_estrategicos: jsonData.ejes_estrategicos || [],
+                        iniciativas: jsonData.iniciativas || []
+                    };
+
+                    btn.disabled = true;
+
+                    fetch('/api/roadmaps', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(roadmapData)
+                    })
+                    .then(r => {
+                        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                        return r.json();
+                    })
+                    .then(response => {
+                        currentRoadmapData = roadmapData;
+                        showMessage('✓ Roadmap importado correctamente', 'success');
+                        setTimeout(() => renderRoadmap(roadmapData), 500);
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        showMessage('❌ Error al importar: ' + err.message, 'error');
+                    })
+                    .finally(() => { btn.disabled = false; });
+                } catch (err) {
+                    showMessage('❌ JSON inválido: ' + err.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function clearJsonImport() {
+            document.getElementById('jsonFile').value = '';
+            document.getElementById('importTitle').value = '';
+            document.getElementById('jsonPreview').style.display = 'none';
+            document.getElementById('successMsg').style.display = 'none';
+            document.getElementById('errorMsg').style.display = 'none';
+        }
+
+        function renderRoadmap(data) {
+            currentRoadmapData = data;
+            const title = data.title || data.producto || 'Roadmap';
+            
+            document.getElementById('roadmapTitle').textContent = title;
+            document.getElementById('pageTitle').textContent = `${data.organizacion ? data.organizacion + ' - ' : ''}${title}`;
+
+            renderTimeline(data.horizonte_base);
+            renderRoadmapContent(data);
+
+            document.getElementById('importView').classList.remove('active');
+            document.getElementById('roadmapView').classList.add('active');
+        }
+
+        function renderTimeline(horizonte) {
+            const quarters = [];
+            const [startYear, startQ] = horizonte.inicio.split('-T').map(x => parseInt(x) || 0);
+            const [endYear, endQ] = horizonte.fin.split('-T').map(x => parseInt(x) || 0);
+
+            for (let y = startYear; y <= endYear; y++) {
+                const startQuarter = y === startYear ? startQ : 1;
+                const endQuarter = y === endYear ? endQ : 4;
+                for (let q = startQuarter; q <= endQuarter; q++) {
+                    quarters.push(`${y}-T${q}`);
+                }
+            }
+
+            let html = '<div class="label"></div>';
+            quarters.forEach(q => {
+                html += `<div>T${q.split('T')[1]}</div>`;
+            });
+            html += '<br/>';
+            html += '<div class="label"></div>';
+            quarters.forEach(q => {
+                const year = q.split('-')[0];
+                html += `<div>${year}</div>`;
+            });
+
+            document.getElementById('timelineQuarters').innerHTML = html;
+        }
+
+        function renderRoadmapContent(data) {
+            const ejes = data.ejes_estrategicos || [];
+            const iniciativas = data.iniciativas || [];
+
+            let html = '';
+
+            ejes.forEach(eje => {
+                html += `<div class="eje-title" style="border-bottom-color: ${eje.color || '#ddd'};">
+                    ${eje.nombre || eje.id}
+                </div>`;
+
+                const ejeIniciativas = iniciativas.filter(i => i.eje === eje.id);
+                
+                if (ejeIniciativas.length === 0) {
+                    html += '<div style="padding: 10px; color: #999; font-size: 0.9em;">Sin iniciativas</div>';
+                } else {
+                    ejeIniciativas.forEach(init => {
+                        html += renderIniciativaRow(init);
+                    });
+                }
+            });
+
+            document.getElementById('roadmapContent').innerHTML = html;
+        }
+
+        function renderIniciativaRow(init) {
+            const inicio = init.inicio || '2026-T1';
+            const fin = init.fin || '2026-T4';
+            const certeza = init.certeza || 'planificado';
+
+            const [inicioYear, inicioQ] = inicio.split('-T').map(x => parseInt(x) || 0);
+            const [finYear, finQ] = fin.split('-T').map(x => parseInt(x) || 0);
+
+            let html = `<div class="iniciativa-row">
+                <div class="iniciativa-name" title="${init.nombre}">
+                    <strong>${init.nombre}</strong><br/>
+                    <small style="color: var(--muted);">${init.expediente || ''}</small>
+                </div>`;
+
+            // Timeline cells
+            for (let i = 0; i < 20; i++) {
+                const quarterNum = (i % 4) + 1;
+                const year = 2026 + Math.floor(i / 4);
+                const currentQ = `${year}-T${quarterNum}`;
+
+                // Check if this quarter is in range
+                let isInRange = false;
+                if (year > inicioYear && year < finYear) {
+                    isInRange = true;
+                } else if (year === inicioYear && quarterNum >= inicioQ) {
+                    isInRange = true;
+                } else if (year === finYear && quarterNum <= finQ) {
+                    isInRange = true;
+                }
+
+                if (isInRange) {
+                    html += `<div class="iniciativa-bar certeza-${certeza}" title="${init.nombre}"></div>`;
+                } else {
+                    html += '<div></div>';
+                }
+            }
+
+            html += '</div>';
+            return html;
+        }
+
+        function downloadRoadmap() {
+            if (!currentRoadmapData) return;
+            const json = JSON.stringify(currentRoadmapData, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = (currentRoadmapData.producto || 'roadmap') + '.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>

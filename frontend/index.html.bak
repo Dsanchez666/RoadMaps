@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roadmap ETNA - MVP</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        header {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        header button {
+            padding: 8px 16px;
+            border: none;
+            background: #667eea;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
+        header button:hover {
+            background: #5568d3;
+        }
+
+        header button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ================ VIEWS ================ */
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        /* ================ LIST VIEW ================ */
+        .create-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1em;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #e0e0e0;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .success, .error {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .success.show, .error.show {
+            display: block;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .list-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .list-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .roadmap-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f9f9f9;
+            border-left: 4px solid #667eea;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            transition: all 0.3s;
+        }
+
+        .roadmap-item:hover {
+            background: #f5f5f5;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .roadmap-info {
+            flex: 1;
+        }
+
+        .roadmap-title {
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+
+        .roadmap-description {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .roadmap-actions {
+            display: flex;
+            gap: 10px;
+            margin-left: 20px;
+        }
+
+        .btn-view, .btn-edit {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+
+        .btn-view {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-view:hover {
+            background: #5568d3;
+        }
+
+        .btn-edit {
+            background: #48bb78;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background: #38a169;
+        }
+
+        .empty-list {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+            font-size: 1.1em;
+        }
+
+        /* ================ VIEW DETAILS ================ */
+        .detail-view {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .detail-view h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .detail-section {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .detail-section h3 {
+            color: #667eea;
+            margin-bottom: 12px;
+            font-size: 1.1em;
+        }
+
+        .detail-section p {
+            margin-bottom: 8px;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .detail-section code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .detail-section ul {
+            margin-left: 20px;
+            color: #555;
+        }
+
+        .detail-section li {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+
+        .detail-section small {
+            color: #999;
+            display: block;
+        }
+
+        /* ================ EDIT VIEW ================ */
+        .edit-view {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .edit-view h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .edit-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+
+        .edit-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+
+        .list-item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: flex-start;
+        }
+
+        .list-item > div {
+            flex: 1;
+        }
+
+        .list-item input,
+        .list-item textarea,
+        .list-item select {
+            margin-bottom: 8px;
+        }
+
+        .list-item .btn-small {
+            background: #dc3545;
+            color: white;
+            padding: 8px 12px;
+            margin-top: 8px;
+            font-size: 0.85em;
+            align-self: flex-start;
+        }
+
+        .list-item .btn-small:hover {
+            background: #c82333;
+        }
+
+        .add-btn {
+            background: #48bb78;
+            color: white;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .add-btn:hover {
+            background: #38a169;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗺️ Roadmap ETNA</h1>
+
+        <!-- ================ LIST VIEW ================ -->
+        <div id="listView" class="view active">
+            <div class="create-section">
+                <h2 style="color: #333; margin-bottom: 20px;">Opciones de Roadmap</h2>
+                <div id="successMsg" class="success"></div>
+                <div id="errorMsg" class="error"></div>
+                
+                <div style="display: flex; gap: 20px; margin-bottom: 30px; border-bottom: 2px solid #f0f0f0; padding-bottom: 20px;">
+                    <label style="flex: 1; cursor: pointer; padding: 15px; background: #f9f9f9; border: 2px solid #667eea; border-radius: 6px; text-align: center;">
+                        <input type="radio" name="action" value="create" checked onchange="toggleAction()"> 
+                        <strong>Crear Nuevo</strong>
+                    </label>
+                    <label style="flex: 1; cursor: pointer; padding: 15px; background: #f9f9f9; border: 2px solid #48bb78; border-radius: 6px; text-align: center;">
+                        <input type="radio" name="action" value="import" onchange="toggleAction()">
+                        <strong>Importar JSON</strong>
+                    </label>
+                </div>
+
+                <!-- CREATE SECTION -->
+                <div id="createSection" style="display: block;">
+                    <h3 style="color: #333; margin-bottom: 15px;">Crear Nuevo Roadmap</h3>
+                    <form onsubmit="handleFormSubmit(event)">
+                        <div class="form-group">
+                            <label for="title">Título *</label>
+                            <input type="text" id="title" name="title" placeholder="Ej: v2.0 - Backend Microservicios" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="description">Descripción</label>
+                            <textarea id="description" name="description" placeholder="Describe los objetivos y features..."></textarea>
+                        </div>
+                        <div class="button-group">
+                            <button type="submit" class="btn-primary">Crear Roadmap</button>
+                            <button type="reset" class="btn-secondary">Limpiar</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- IMPORT SECTION -->
+                <div id="importSection" style="display: none;">
+                    <h3 style="color: #333; margin-bottom: 15px;">Importar Roadmap desde JSON</h3>
+                    <div class="form-group">
+                        <label for="jsonFile">Selecciona un archivo JSON</label>
+                        <input type="file" id="jsonFile" name="jsonFile" accept=".json" style="padding: 8px;">
+                    </div>
+                    <div id="jsonPreview" style="background: #f5f5f5; padding: 15px; border-radius: 6px; margin-bottom: 15px; display: none; max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 0.85em; white-space: pre-wrap; word-break: break-all;"></div>
+                    <div class="form-group">
+                        <label for="importTitle">Título del Roadmap (opcional)</label>
+                        <input type="text" id="importTitle" name="importTitle" placeholder="Si está vacío, usará 'producto' del JSON">
+                    </div>
+                    <div class="button-group">
+                        <button type="button" class="btn-primary" onclick="importRoadmapFromJson(this)">Importar</button>
+                        <button type="button" class="btn-secondary" onclick="clearJsonFile()">Limpiar</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="list-section">
+                <h2>Roadmaps Disponibles</h2>
+                <div id="roadmapList" class="empty-list">Cargando roadmaps...</div>
+            </div>
+        </div>
+
+        <!-- ================ VIEW DETAILS ================ -->
+        <div id="viewDetailsView" class="view">
+            <header>
+                <button type="button" onclick="goToList()">← Volver a lista</button>
+                <div style="flex: 1;"></div>
+                <button type="button" class="btn-edit" onclick="goToEdit(currentRoadmapId)">Editar →</button>
+            </header>
+            <div class="detail-view">
+                <h2 id="viewTitle">Roadmap</h2>
+                <div id="viewDetailsBody"></div>
+            </div>
+        </div>
+
+        <!-- ================ EDIT VIEW ================ -->
+        <div id="editView" class="view">
+            <header>
+                <button type="button" onclick="goToView(currentRoadmapId)">← Volver a ver</button>
+                <div style="flex: 1;"></div>
+            </header>
+            <div class="edit-view">
+                <h2>Editar Roadmap</h2>
+
+                <div class="edit-section">
+                    <h3>Información General</h3>
+                    <div class="form-group">
+                        <label for="editTitle">Título *</label>
+                        <input type="text" id="editTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editDescription">Descripción</label>
+                        <textarea id="editDescription"></textarea>
+                    </div>
+                </div>
+
+                <div class="edit-section">
+                    <h3>Ejes Estratégicos</h3>
+                    <div id="editEjesList"></div>
+                    <button type="button" class="add-btn" onclick="addEje()">+ Agregar Eje</button>
+                </div>
+
+                <div class="edit-section">
+                    <h3>Iniciativas</h3>
+                    <div id="editInitList"></div>
+                    <button type="button" class="add-btn" onclick="addInit()">+ Agregar Iniciativa</button>
+                </div>
+
+                <div class="button-group" style="margin-top: 30px;">
+                    <button type="button" class="btn-primary" onclick="saveEdit()">Guardar Cambios</button>
+                    <button type="button" class="btn-secondary" onclick="goToList()">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentRoadmapId = null;
+        let currentView = 'list';
+
+        // ================ NAVIGATION ================
+        function goToList() {
+            currentView = 'list';
+            document.getElementById('listView').classList.add('active');
+            document.getElementById('viewDetailsView').classList.remove('active');
+            document.getElementById('editView').classList.remove('active');
+            loadRoadmaps();
+        }
+
+        function goToView(id) {
+            currentView = 'view';
+            currentRoadmapId = id;
+            document.getElementById('listView').classList.remove('active');
+            document.getElementById('viewDetailsView').classList.add('active');
+            document.getElementById('editView').classList.remove('active');
+            loadViewDetails(id);
+        }
+
+        function goToEdit(id) {
+            currentView = 'edit';
+            currentRoadmapId = id;
+            document.getElementById('listView').classList.remove('active');
+            document.getElementById('viewDetailsView').classList.remove('active');
+            document.getElementById('editView').classList.add('active');
+            loadEditForm(id);
+        }
+
+        // ================ TOGGLE ACTION ================
+        function toggleAction() {
+            const action = document.querySelector('input[name="action"]:checked').value;
+            document.getElementById('createSection').style.display = action === 'create' ? 'block' : 'none';
+            document.getElementById('importSection').style.display = action === 'import' ? 'block' : 'none';
+            
+            if (action === 'import') {
+                document.getElementById('jsonFile').addEventListener('change', previewJsonFile);
+            }
+        }
+
+        // ================ JSON IMPORT ================
+        function previewJsonFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const json = JSON.parse(e.target.result);
+                    const preview = document.getElementById('jsonPreview');
+                    preview.style.display = 'block';
+                    preview.textContent = JSON.stringify(json, null, 2);
+                    
+                    // Auto-fill title with producto if available
+                    if (json.producto && !document.getElementById('importTitle').value) {
+                        document.getElementById('importTitle').value = json.producto;
+                    }
+                } catch (err) {
+                    showMessage('✗ JSON inválido: ' + err.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function importRoadmapFromJson(btn) {
+            const file = document.getElementById('jsonFile').files[0];
+            if (!file) {
+                showMessage('Selecciona un archivo JSON', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const jsonData = JSON.parse(e.target.result);
+                    const title = document.getElementById('importTitle').value.trim() || jsonData.producto || 'Sin título';
+                    const description = jsonData.descripcion || '';
+                    
+                    // Prepare roadmap data
+                    const roadmapData = {
+                        title: title,
+                        description: description,
+                        producto: jsonData.producto || '',
+                        organizacion: jsonData.organizacion || '',
+                        ejes_estrategicos: jsonData.ejes_estrategicos || [],
+                        iniciativas: jsonData.iniciativas || []
+                    };
+                    
+                    btn.disabled = true;
+
+                    fetch('/api/roadmaps', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(roadmapData)
+                    })
+                    .then(r => {
+                        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                        return r.json();
+                    })
+                    .then(data => {
+                        showMessage('✓ Roadmap importado: ' + data.title, 'success');
+                        document.getElementById('jsonFile').value = '';
+                        document.getElementById('importTitle').value = '';
+                        document.getElementById('jsonPreview').style.display = 'none';
+                        document.querySelector('input[value="create"]').checked = true;
+                        toggleAction();
+                        loadRoadmaps();
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        showMessage('✗ Error al importar: ' + err.message, 'error');
+                    })
+                    .finally(() => { btn.disabled = false; });
+                } catch (err) {
+                    showMessage('✗ JSON inválido: ' + err.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function clearJsonFile() {
+            document.getElementById('jsonFile').value = '';
+            document.getElementById('importTitle').value = '';
+            document.getElementById('jsonPreview').style.display = 'none';
+        }
+
+        // ================ CREATE ================
+        function handleFormSubmit(event) {
+            event.preventDefault();
+            const title = document.getElementById('title').value;
+            const description = document.getElementById('description').value;
+            const btn = event.target.querySelector('button[type="submit"]');
+            btn.disabled = true;
+
+            fetch('/api/roadmaps', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, description, ejes_estrategicos: [], iniciativas: [] })
+            })
+            .then(r => {
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                return r.json();
+            })
+            .then(data => {
+                showMessage('✓ Roadmap creado: ' + data.title, 'success');
+                document.getElementById('title').value = '';
+                document.getElementById('description').value = '';
+                loadRoadmaps();
+            })
+            .catch(err => {
+                console.error(err);
+                showMessage('✗ Error al crear: ' + err.message, 'error');
+            })
+            .finally(() => { btn.disabled = false; });
+        }
+
+        // ================ LIST ================
+        function loadRoadmaps() {
+            fetch('/api/roadmaps')
+            .then(r => r.json())
+            .then(data => {
+                const list = document.getElementById('roadmapList');
+                if (!data || data.length === 0) {
+                    list.innerHTML = '<div class="empty-list">No hay roadmaps creados aún</div>';
+                    return;
+                }
+                list.innerHTML = data.map(rm => `
+                    <div class="roadmap-item">
+                        <div class="roadmap-info">
+                            <div class="roadmap-title">${escapeHtml(rm.title)}</div>
+                            <div class="roadmap-description">${escapeHtml(rm.description || 'Sin descripción')}</div>
+                        </div>
+                        <div class="roadmap-actions">
+                            <button class="btn-view" onclick="goToView('${rm.id}')">Ver</button>
+                            <button class="btn-edit" onclick="goToEdit('${rm.id}')">Editar</button>
+                        </div>
+                    </div>
+                `).join('');
+            })
+            .catch(err => console.error('Error loading:', err));
+        }
+
+        // ================ VIEW DETAILS ================
+        function loadViewDetails(id) {
+            fetch(`/api/roadmaps/${id}`)
+            .then(r => r.json())
+            .then(rm => {
+                document.getElementById('viewTitle').textContent = escapeHtml(rm.title);
+                
+                let html = `
+                    <div class="detail-section">
+                        <h3>Información General</h3>
+                        <p><strong>Título:</strong> ${escapeHtml(rm.title)}</p>
+                        <p><strong>Descripción:</strong> ${escapeHtml(rm.description || 'Sin descripción')}</p>
+                        <p><strong>ID:</strong> <code>${rm.id}</code></p>
+                        <p><strong>Creado:</strong> ${new Date(rm.createdAt).toLocaleString('es-ES')}</p>
+                    </div>
+                `;
+                
+                let ejes = rm.ejes_estrategicos;
+                if (typeof ejes === 'string') ejes = JSON.parse(ejes);
+                if (ejes && ejes.length > 0) {
+                    html += `<div class="detail-section">
+                        <h3>Ejes Estratégicos (${ejes.length})</h3>
+                        <ul>` + ejes.map(e => `<li>${escapeHtml(e.nombre || 'Sin nombre')}</li>`).join('') + `</ul>
+                    </div>`;
+                }
+                
+                let inits = rm.iniciativas;
+                if (typeof inits === 'string') inits = JSON.parse(inits);
+                if (inits && inits.length > 0) {
+                    html += `<div class="detail-section">
+                        <h3>Iniciativas (${inits.length})</h3>
+                        <ul>` + inits.map(i => `<li>${escapeHtml(i.nombre || 'Sin nombre')}<br><small>${escapeHtml(i.descripcion || '')}</small></li>`).join('') + `</ul>
+                    </div>`;
+                }
+                
+                document.getElementById('viewDetailsBody').innerHTML = html;
+            })
+            .catch(err => console.error('Error:', err));
+        }
+
+        // ================ EDIT FORM ================
+        function loadEditForm(id) {
+            fetch(`/api/roadmaps/${id}`)
+            .then(r => r.json())
+            .then(rm => {
+                document.getElementById('editTitle').value = rm.title;
+                document.getElementById('editDescription').value = rm.description || '';
+                
+                let ejes = rm.ejes_estrategicos;
+                if (typeof ejes === 'string') ejes = JSON.parse(ejes);
+                
+                let inits = rm.iniciativas;
+                if (typeof inits === 'string') inits = JSON.parse(inits);
+                
+                document.getElementById('editEjesList').innerHTML = (ejes || []).map((e, i) => renderEjeItem(e, i)).join('');
+                
+                document.getElementById('editInitList').innerHTML = (inits || []).map((ini, idx) => renderInitItem(ini, idx)).join('');
+            })
+            .catch(err => console.error('Error:', err));
+        }
+
+        function renderEjeItem(eje, idx) {
+            const id = eje.id || 'EJE-' + Date.now() + '-' + idx;
+            return `
+                <div class="list-item" data-eje-id="${escapeHtml(id)}">
+                    <div>
+                        <label style="margin-bottom: 4px;">ID:</label>
+                        <input type="text" class="eje-id" value="${escapeHtml(id)}" readonly style="background: #f5f5f5;">
+                        <label style="margin-bottom: 4px; margin-top: 8px;">Nombre *</label>
+                        <input type="text" class="eje-nombre" placeholder="Nombre del eje" value="${escapeHtml(eje.nombre || '')}">
+                        <label style="margin-bottom: 4px; margin-top: 8px;">Descripción</label>
+                        <textarea class="eje-desc" placeholder="Descripción" style="min-height: 60px;">${escapeHtml(eje.descripcion || '')}</textarea>
+                        <label style="margin-bottom: 4px; margin-top: 8px;">Color</label>
+                        <input type="color" class="eje-color" value="${eje.color || '#667eea'}" style="width: 100%; padding: 20px;">
+                    </div>
+                    <button type="button" class="btn-small" onclick="this.closest('.list-item').remove()">Eliminar</button>
+                </div>
+            `;
+        }
+
+        function renderInitItem(init, idx) {
+            const id = init.id || 'INIT-' + Date.now() + '-' + idx;
+            return `
+                <div class="list-item" data-init-id="${escapeHtml(id)}">
+                    <div style="width: 100%;">
+                        <label style="margin-bottom: 4px;">ID:</label>
+                        <input type="text" class="init-id" value="${escapeHtml(id)}" readonly style="background: #f5f5f5;">
+                        <label style="margin-bottom: 4px; margin-top: 8px;">Nombre *</label>
+                        <input type="text" class="init-nombre" placeholder="Nombre" value="${escapeHtml(init.nombre || '')}">
+                        <label style="margin-bottom: 4px; margin-top: 8px;">Eje Estratégico *</label>
+                        <input type="text" class="init-eje" placeholder="ID del eje (ej: EJE1)" value="${escapeHtml(init.eje || '')}">
+                        <label style="margin-bottom: 4px; margin-top: 8px;">Tipo</label>
+                        <input type="text" class="init-tipo" placeholder="Tipo (ej: Feature)" value="${escapeHtml(init.tipo || '')}">
+                        <label style="margin-bottom: 4px; margin-top: 8px;">Expediente</label>
+                        <input type="text" class="init-expediente" placeholder="Expediente" value="${escapeHtml(init.expediente || '')}">
+                        <label style="margin-bottom: 4px; margin-top: 8px;">Inicio</label>
+                        <input type="text" class="init-inicio" placeholder="Ej: 2026-T1" value="${escapeHtml(init.inicio || '')}">
+                        <label style="margin-bottom: 4px; margin-top: 8px;">Fin</label>
+                        <input type="text" class="init-fin" placeholder="Ej: 2026-T4" value="${escapeHtml(init.fin || '')}">
+                        <label style="margin-bottom: 4px; margin-top: 8px;">Objetivo</label>
+                        <textarea class="init-objetivo" placeholder="Objetivo" style="min-height: 50px;">${escapeHtml(init.objetivo || '')}</textarea>
+                        <label style="margin-bottom: 4px; margin-top: 8px;">Impacto Principal</label>
+                        <input type="text" class="init-impacto" placeholder="Impacto principal" value="${escapeHtml(init.impacto_principal || '')}">
+                        <label style="margin-bottom: 4px; margin-top: 8px;">Usuarios Afectados</label>
+                        <textarea class="init-usuarios" placeholder="Usuarios afectados" style="min-height: 50px;">${escapeHtml(init.usuarios_afectados || '')}</textarea>
+                        <label style="margin-bottom: 4px; margin-top: 8px;">Certeza</label>
+                        <select class="init-certeza" style="width: 100%; padding: 8px;">
+                            <option value="comprometido" ${init.certeza === 'comprometido' ? 'selected' : ''}>Comprometido</option>
+                            <option value="planificado" ${init.certeza === 'planificado' ? 'selected' : ''}>Planificado</option>
+                            <option value="exploratorio" ${init.certeza === 'exploratorio' ? 'selected' : ''}>Exploratorio</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn-small" onclick="this.closest('.list-item').remove()">Eliminar</button>
+                </div>
+            `;
+        }
+
+        function addEje() {
+            const list = document.getElementById('editEjesList');
+            const newIdx = list.children.length;
+            const div = document.createElement('div');
+            div.innerHTML = renderEjeItem({}, newIdx);
+            list.appendChild(div.firstElementChild);
+        }
+
+        function addInit() {
+            const list = document.getElementById('editInitList');
+            const newIdx = list.children.length;
+            const div = document.createElement('div');
+            div.innerHTML = renderInitItem({}, newIdx);
+            list.appendChild(div.firstElementChild);
+        }
+
+        function saveEdit() {
+            if (!currentRoadmapId) return;
+            const title = document.getElementById('editTitle').value;
+            const description = document.getElementById('editDescription').value;
+            
+            if (!title.trim()) {
+                showMessage('✗ El título es obligatorio', 'error');
+                return;
+            }
+            
+            // Collect ejes from inputs
+            const ejeInputs = Array.from(document.getElementById('editEjesList').children).map(item => {
+                const nombre = item.querySelector('.eje-nombre').value.trim();
+                if (!nombre) return null;
+                return {
+                    id: item.querySelector('.eje-id').value.trim(),
+                    nombre: nombre,
+                    descripcion: item.querySelector('.eje-desc').value.trim(),
+                    color: item.querySelector('.eje-color').value
+                };
+            }).filter(e => e !== null);
+            
+            // Collect initiatives from inputs
+            const initInputs = Array.from(document.getElementById('editInitList').children).map(item => {
+                const nombre = item.querySelector('.init-nombre').value.trim();
+                if (!nombre) return null;
+                return {
+                    id: item.querySelector('.init-id').value.trim(),
+                    nombre: nombre,
+                    eje: item.querySelector('.init-eje').value.trim(),
+                    tipo: item.querySelector('.init-tipo').value.trim(),
+                    expediente: item.querySelector('.init-expediente').value.trim(),
+                    inicio: item.querySelector('.init-inicio').value.trim(),
+                    fin: item.querySelector('.init-fin').value.trim(),
+                    objetivo: item.querySelector('.init-objetivo').value.trim(),
+                    impacto_principal: item.querySelector('.init-impacto').value.trim(),
+                    usuarios_afectados: item.querySelector('.init-usuarios').value.trim(),
+                    dependencias: [],
+                    certeza: item.querySelector('.init-certeza').value
+                };
+            }).filter(i => i !== null);
+            
+            const btn = event.target;
+            btn.disabled = true;
+
+            fetch(`/api/roadmaps/${currentRoadmapId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    title, 
+                    description, 
+                    ejes_estrategicos: ejeInputs,
+                    iniciativas: initInputs
+                })
+            })
+            .then(r => {
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                return r.json();
+            })
+            .then(() => {
+                showMessage('✓ Roadmap actualizado correctamente', 'success');
+                setTimeout(() => goToList(), 1000);
+            })
+            .catch(err => {
+                console.error(err);
+                showMessage('✗ Error al actualizar: ' + err.message, 'error');
+            })
+            .finally(() => { btn.disabled = false; });
+        }
+
+        // ================ UTILS ================
+        function showMessage(msg, type) {
+            const msgEl = document.getElementById(type + 'Msg');
+            msgEl.textContent = msg;
+            msgEl.classList.add('show');
+            setTimeout(() => msgEl.classList.remove('show'), 4000);
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // Load roadmaps on page load
+        goToList();
+    </script>
+</body>
+</html>

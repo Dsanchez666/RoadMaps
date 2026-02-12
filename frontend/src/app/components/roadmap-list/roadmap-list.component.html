@@ -1,0 +1,9 @@
+<div>
+  <h2>Lista</h2>
+  <div *ngIf="loading">Cargando...</div>
+  <ul>
+    <li *ngFor="let r of roadmaps">
+      <strong>{{r.title}}</strong> — {{r.description}}
+    </li>
+  </ul>
+</div>
