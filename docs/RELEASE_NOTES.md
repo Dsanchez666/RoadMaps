@@ -1,5 +1,42 @@
 # Release Notes - Roadmap MVP
 
+## v0.3 - Edit Roadmap Feature
+**Fecha:** 2026-02-12
+
+### Nuevas Características
+- **Edición de Roadmaps**: Botón EDITAR en listado y en visualización de roadmaps
+  - Interfaz visual completa para editar datos base, ejes e iniciativas
+  - Tablas con CRUD (crear, leer, actualizar, eliminar) para ejes e iniciativas
+  - Modales para edición de ejes y iniciativas con todos los campos
+
+- **Guardado Flexible**: Al guardar cambios, se pregunta:
+  - Sobreescribir el roadmap actual
+  - Guardar como nuevo roadmap (crea una copia)
+  - Opción de descartar cambios
+
+- **Interfaz de Edición**:
+  - Datos base: Título, producto, organización, horizonte
+  - Tabla de ejes con ID, nombre, descripción y color
+  - Tabla de iniciativas con nombre, eje, inicio, fin
+  - Botones para añadir, editar y eliminar
+
+### Mejoras
+- Interfaz responsive con dos columnas en pantallas grandes
+- Confirmación antes de descartar cambios
+- Navegación clara entre vistas
+- Persistencia automática en localStorage
+
+### Cambios Técnicos
+- Nueva vista: `editView`
+- Nuevos modales: `ejeModalOverlay`, `iniciativaModalOverlay`, `saveModalOverlay`
+- Funciones de edición: `editCurrentRoadmap()`, `editRoadmapFromList()`, `loadEditForm()`
+- CRUD de ejes: `addNewEje()`, `editEje()`, `saveEjeModal()`, `removeEje()`
+- CRUD de iniciativas: `addNewIniciativa()`, `editIniciativa()`, `saveIniciativaModal()`, `removeIniciativa()`
+- Guardado: `saveEditedRoadmap()`, `saveOverwriteRoadmap()`, `saveAsNewRoadmap()`
+- Estilos para tablas, modales y botones de edición
+
+---
+
 ## v0.2 - Home Screen & Roadmap Management
 **Fecha:** 2026-02-12
 

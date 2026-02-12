@@ -225,6 +225,157 @@
             margin-bottom: 20px;
         }
 
+        /* ========= EDIT VIEW STYLES ========= */
+        .edit-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .edit-sections {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .edit-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .edit-section h3 {
+            margin-top: 0;
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85em;
+        }
+
+        .data-table th {
+            background: #f5f5f5;
+            padding: 10px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .data-table td {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .data-table tr:hover {
+            background: #f9f9f9;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+
+        .action-buttons button {
+            padding: 4px 8px;
+            font-size: 0.8em;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-edit {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background: #5568d3;
+        }
+
+        .btn-remove {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .btn-remove:hover {
+            background: #ff5252;
+        }
+
+        .add-btn {
+            width: 100%;
+            padding: 10px;
+            margin-top: 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .add-btn:hover {
+            background: #5568d3;
+        }
+
+        .edit-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .edit-footer button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1em;
+        }
+
+        .btn-save {
+            background: #2e7d32;
+            color: white;
+        }
+
+        .btn-save:hover {
+            background: #1b5e20;
+        }
+
+        .btn-cancel {
+            background: #9e9e9e;
+            color: white;
+        }
+
+        .btn-cancel:hover {
+            background: #757575;
+        }
+
+        @media (max-width: 900px) {
+            .edit-sections {
+                grid-template-columns: 1fr;
+            }
+        }
+
         .form-group {
             margin-bottom: 15px;
         }
@@ -652,10 +803,11 @@
     <!-- ========= ROADMAP VIEW ========= -->
     <div id="roadmapView" class="view">
         <header>
-            <button onclick="goToImport()">← Volver a importar</button>
+            <button onclick="goToHome()">← Inicio</button>
             <div class="spacer"></div>
             <span id="roadmapTitle" style="font-weight: 600; font-size: 1.1em;"></span>
             <div class="spacer"></div>
+            <button onclick="editCurrentRoadmap()">✏️ Editar</button>
             <button onclick="downloadRoadmap()">⬇️ Descargar JSON</button>
         </header>
 
@@ -690,6 +842,179 @@
         </div>
 
         <div class="roadmap" id="roadmapContent"></div>
+    </div>
+
+    <!-- ========= EDIT VIEW ========= -->
+    <div id="editView" class="view">
+        <header>
+            <button onclick="cancelEditRoadmap()">← Cancelar</button>
+            <h1>Editar Roadmap</h1>
+        </header>
+        <div class="edit-container">
+            <div class="edit-sections">
+                <!-- Left column: Datos base y Ejes -->
+                <div>
+                    <div class="edit-section">
+                        <h3>Datos Base</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Título</label>
+                                <input type="text" id="editTitle" placeholder="Título del roadmap">
+                            </div>
+                            <div class="form-group">
+                                <label>Producto</label>
+                                <input type="text" id="editProducto" placeholder="Ej: ETNA">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Organización</label>
+                                <input type="text" id="editOrganizacion" placeholder="Ej: ENAIRE">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Horizonte Inicio (YYYY-TQ)</label>
+                                <input type="text" id="editInicio" placeholder="2026-T1">
+                            </div>
+                            <div class="form-group">
+                                <label>Horizonte Fin (YYYY-TQ)</label>
+                                <input type="text" id="editFin" placeholder="2030-T4">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="edit-section">
+                        <h3>Ejes Estratégicos</h3>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Nombre</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ejesList"></tbody>
+                            </table>
+                        </div>
+                        <button class="add-btn" onclick="addNewEje()">+ Añadir Eje</button>
+                    </div>
+                </div>
+
+                <!-- Right column: Iniciativas -->
+                <div>
+                    <div class="edit-section">
+                        <h3>Iniciativas</h3>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Eje</th>
+                                        <th>Inicio</th>
+                                        <th>Fin</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="iniciativasList"></tbody>
+                            </table>
+                        </div>
+                        <button class="add-btn" onclick="addNewIniciativa()">+ Añadir Iniciativa</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="edit-footer">
+                <button class="btn-save" onclick="saveEditedRoadmap()">💾 Guardar</button>
+                <button class="btn-cancel" onclick="cancelEditRoadmap()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========= EDIT EJE MODAL ========= -->
+    <div id="ejeModalOverlay" class="modal-overlay">
+        <div class="modal">
+            <span class="modal-close" onclick="closeEjeModal()">&times;</span>
+            <h2 id="ejeModalTitle">Nuevo Eje</h2>
+            <div class="modal-field">
+                <label>ID</label>
+                <input type="text" id="ejeModalId" placeholder="Ej: E1">
+            </div>
+            <div class="modal-field">
+                <label>Nombre</label>
+                <input type="text" id="ejeModalNombre" placeholder="Nombre del eje">
+            </div>
+            <div class="modal-field">
+                <label>Descripción</label>
+                <textarea id="ejeModalDesc" placeholder="Descripción" style="min-height: 60px;"></textarea>
+            </div>
+            <div class="modal-field">
+                <label>Color</label>
+                <input type="text" id="ejeModalColor" placeholder="#667eea">
+            </div>
+            <div class="button-group">
+                <button class="btn-primary" onclick="saveEjeModal()">Guardar</button>
+                <button class="btn-secondary" onclick="closeEjeModal()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========= EDIT INICIATIVA MODAL ========= -->
+    <div id="iniciativaModalOverlay" class="modal-overlay">
+        <div class="modal" style="max-width: 700px;">
+            <span class="modal-close" onclick="closeIniciativaModal()">&times;</span>
+            <h2 id="iniciativaModalTitle">Nueva Iniciativa</h2>
+            <div class="modal-field">
+                <label>Nombre</label>
+                <input type="text" id="iniciativaModalNombre" placeholder="Nombre">
+            </div>
+            <div class="modal-field">
+                <label>ID</label>
+                <input type="text" id="iniciativaModalId" placeholder="Ej: INIT1">
+            </div>
+            <div class="form-row">
+                <div class="modal-field">
+                    <label>Eje</label>
+                    <select id="iniciativaModalEje"></select>
+                </div>
+                <div class="modal-field">
+                    <label>Tipo</label>
+                    <input type="text" id="iniciativaModalTipo" placeholder="Feature, Bugfix...">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="modal-field">
+                    <label>Inicio (YYYY-TQ)</label>
+                    <input type="text" id="iniciativaModalInicio" placeholder="2026-T1">
+                </div>
+                <div class="modal-field">
+                    <label>Fin (YYYY-TQ)</label>
+                    <input type="text" id="iniciativaModalFin" placeholder="2026-T4">
+                </div>
+            </div>
+            <div class="modal-field">
+                <label>Objetivo</label>
+                <textarea id="iniciativaModalObjetivo" placeholder="Objetivo" style="min-height: 60px;"></textarea>
+            </div>
+            <div class="button-group">
+                <button class="btn-primary" onclick="saveIniciativaModal()">Guardar</button>
+                <button class="btn-secondary" onclick="closeIniciativaModal()">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========= SAVE OPTIONS MODAL ========= -->
+    <div id="saveModalOverlay" class="modal-overlay">
+        <div class="modal">
+            <span class="modal-close" onclick="closeSaveModal()">&times;</span>
+            <h2>Guardar Roadmap</h2>
+            <p style="margin: 15px 0;">¿Cómo deseas guardar los cambios?</p>
+            <div class="button-group">
+                <button class="btn-primary" onclick="saveOverwriteRoadmap()">Sobreescribir actual</button>
+                <button class="btn-secondary" onclick="saveAsNewRoadmap()">Guardar como nuevo</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -1122,6 +1447,7 @@
                         </div>
                         <div class="roadmap-item-actions">
                             <button class="btn-view" onclick="viewRoadmap('${rm.id}')">Ver</button>
+                            <button class="btn-edit" onclick="editRoadmapFromList('${rm.id}')">Editar</button>
                             <button class="btn-delete" onclick="deleteRoadmap('${rm.id}')">Eliminar</button>
                         </div>
                     </div>
@@ -1145,6 +1471,282 @@
                 roadmapsStore = roadmapsStore.filter(r => r.id !== id);
                 localStorage.setItem('roadmaps', JSON.stringify(roadmapsStore));
                 loadAndDisplayRoadmaps();
+            }
+        }
+
+        // ========= EDIT ROADMAP FUNCTIONS =========
+        let editingRoadmap = null;
+        let editingEjeIndex = null;
+        let editingIniciativaIndex = null;
+
+        function editCurrentRoadmap() {
+            if (!currentRoadmapData) return;
+            editingRoadmap = JSON.parse(JSON.stringify(currentRoadmapData));
+            loadEditForm();
+            showView('editView');
+        }
+
+        function editRoadmapFromList(id) {
+            const roadmap = roadmapsStore.find(r => r.id === id);
+            if (!roadmap) return;
+            currentRoadmapData = roadmap;
+            editingRoadmap = JSON.parse(JSON.stringify(roadmap));
+            loadEditForm();
+            showView('editView');
+        }
+
+        function loadEditForm() {
+            document.getElementById('editTitle').value = editingRoadmap.title || '';
+            document.getElementById('editProducto').value = editingRoadmap.producto || '';
+            document.getElementById('editOrganizacion').value = editingRoadmap.organizacion || '';
+            document.getElementById('editInicio').value = editingRoadmap.horizonte_base?.inicio || '2026-T1';
+            document.getElementById('editFin').value = editingRoadmap.horizonte_base?.fin || '2030-T4';
+            
+            renderEjesList();
+            renderIniciativasList();
+        }
+
+        function renderEjesList() {
+            const tbody = document.getElementById('ejesList');
+            if (!editingRoadmap.ejes_estrategicos || editingRoadmap.ejes_estrategicos.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #999;">No hay ejes aún</td></tr>';
+                return;
+            }
+            
+            let html = '';
+            editingRoadmap.ejes_estrategicos.forEach((eje, idx) => {
+                html += `
+                    <tr>
+                        <td>${eje.id || ''}</td>
+                        <td>${eje.nombre || ''}</td>
+                        <td class="action-buttons">
+                            <button class="btn-edit" onclick="editEje(${idx})">Editar</button>
+                            <button class="btn-remove" onclick="removeEje(${idx})">Eliminar</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function renderIniciativasList() {
+            const tbody = document.getElementById('iniciativasList');
+            if (!editingRoadmap.iniciativas || editingRoadmap.iniciativas.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #999;">No hay iniciativas aún</td></tr>';
+                return;
+            }
+            
+            let html = '';
+            editingRoadmap.iniciativas.forEach((init, idx) => {
+                html += `
+                    <tr>
+                        <td>${init.nombre || ''}</td>
+                        <td>${init.eje || ''}</td>
+                        <td>${init.inicio || ''}</td>
+                        <td>${init.fin || ''}</td>
+                        <td class="action-buttons">
+                            <button class="btn-edit" onclick="editIniciativa(${idx})">Editar</button>
+                            <button class="btn-remove" onclick="removeIniciativa(${idx})">Eliminar</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function addNewEje() {
+            editingEjeIndex = null;
+            document.getElementById('ejeModalTitle').textContent = 'Nuevo Eje';
+            document.getElementById('ejeModalId').value = '';
+            document.getElementById('ejeModalNombre').value = '';
+            document.getElementById('ejeModalDesc').value = '';
+            document.getElementById('ejeModalColor').value = '#667eea';
+            document.getElementById('ejeModalOverlay').classList.add('active');
+        }
+
+        function editEje(idx) {
+            editingEjeIndex = idx;
+            const eje = editingRoadmap.ejes_estrategicos[idx];
+            document.getElementById('ejeModalTitle').textContent = 'Editar Eje';
+            document.getElementById('ejeModalId').value = eje.id || '';
+            document.getElementById('ejeModalNombre').value = eje.nombre || '';
+            document.getElementById('ejeModalDesc').value = eje.descripcion || '';
+            document.getElementById('ejeModalColor').value = eje.color || '#667eea';
+            document.getElementById('ejeModalOverlay').classList.add('active');
+        }
+
+        function saveEjeModal() {
+            const eje = {
+                id: document.getElementById('ejeModalId').value,
+                nombre: document.getElementById('ejeModalNombre').value,
+                descripcion: document.getElementById('ejeModalDesc').value,
+                color: document.getElementById('ejeModalColor').value
+            };
+            
+            if (!eje.id || !eje.nombre) {
+                alert('ID y Nombre son requeridos');
+                return;
+            }
+            
+            if (editingEjeIndex !== null) {
+                editingRoadmap.ejes_estrategicos[editingEjeIndex] = eje;
+            } else {
+                if (!editingRoadmap.ejes_estrategicos) editingRoadmap.ejes_estrategicos = [];
+                editingRoadmap.ejes_estrategicos.push(eje);
+            }
+            
+            closeEjeModal();
+            renderEjesList();
+        }
+
+        function removeEje(idx) {
+            if (confirm('¿Eliminar este eje?')) {
+                editingRoadmap.ejes_estrategicos.splice(idx, 1);
+                renderEjesList();
+            }
+        }
+
+        function closeEjeModal() {
+            document.getElementById('ejeModalOverlay').classList.remove('active');
+            editingEjeIndex = null;
+        }
+
+        function addNewIniciativa() {
+            editingIniciativaIndex = null;
+            document.getElementById('iniciativaModalTitle').textContent = 'Nueva Iniciativa';
+            document.getElementById('iniciativaModalNombre').value = '';
+            document.getElementById('iniciativaModalId').value = '';
+            document.getElementById('iniciativaModalTipo').value = '';
+            document.getElementById('iniciativaModalInicio').value = '2026-T1';
+            document.getElementById('iniciativaModalFin').value = '2026-T4';
+            document.getElementById('iniciativaModalObjetivo').value = '';
+            populateEjeSelect();
+            document.getElementById('iniciativaModalOverlay').classList.add('active');
+        }
+
+        function editIniciativa(idx) {
+            editingIniciativaIndex = idx;
+            const init = editingRoadmap.iniciativas[idx];
+            document.getElementById('iniciativaModalTitle').textContent = 'Editar Iniciativa';
+            document.getElementById('iniciativaModalNombre').value = init.nombre || '';
+            document.getElementById('iniciativaModalId').value = init.id || '';
+            document.getElementById('iniciativaModalTipo').value = init.tipo || '';
+            document.getElementById('iniciativaModalInicio').value = init.inicio || '2026-T1';
+            document.getElementById('iniciativaModalFin').value = init.fin || '2026-T4';
+            document.getElementById('iniciativaModalObjetivo').value = init.objetivo || '';
+            populateEjeSelect();
+            document.getElementById('iniciativaModalEje').value = init.eje || '';
+            document.getElementById('iniciativaModalOverlay').classList.add('active');
+        }
+
+        function populateEjeSelect() {
+            const select = document.getElementById('iniciativaModalEje');
+            select.innerHTML = '';
+            if (editingRoadmap.ejes_estrategicos) {
+                editingRoadmap.ejes_estrategicos.forEach(eje => {
+                    const option = document.createElement('option');
+                    option.value = eje.id;
+                    option.textContent = eje.nombre;
+                    select.appendChild(option);
+                });
+            }
+        }
+
+        function saveIniciativaModal() {
+            const init = {
+                id: document.getElementById('iniciativaModalId').value,
+                nombre: document.getElementById('iniciativaModalNombre').value,
+                eje: document.getElementById('iniciativaModalEje').value,
+                tipo: document.getElementById('iniciativaModalTipo').value,
+                inicio: document.getElementById('iniciativaModalInicio').value,
+                fin: document.getElementById('iniciativaModalFin').value,
+                objetivo: document.getElementById('iniciativaModalObjetivo').value,
+                expediente: '',
+                impacto_principal: '',
+                usuarios_afectados: '',
+                dependencias: [],
+                certeza: 'planificado'
+            };
+            
+            if (!init.id || !init.nombre) {
+                alert('ID y Nombre son requeridos');
+                return;
+            }
+            
+            if (editingIniciativaIndex !== null) {
+                editingRoadmap.iniciativas[editingIniciativaIndex] = init;
+            } else {
+                if (!editingRoadmap.iniciativas) editingRoadmap.iniciativas = [];
+                editingRoadmap.iniciativas.push(init);
+            }
+            
+            closeIniciativaModal();
+            renderIniciativasList();
+        }
+
+        function removeIniciativa(idx) {
+            if (confirm('¿Eliminar esta iniciativa?')) {
+                editingRoadmap.iniciativas.splice(idx, 1);
+                renderIniciativasList();
+            }
+        }
+
+        function closeIniciativaModal() {
+            document.getElementById('iniciativaModalOverlay').classList.remove('active');
+            editingIniciativaIndex = null;
+        }
+
+        function saveEditedRoadmap() {
+            // Update from form
+            editingRoadmap.title = document.getElementById('editTitle').value;
+            editingRoadmap.producto = document.getElementById('editProducto').value;
+            editingRoadmap.organizacion = document.getElementById('editOrganizacion').value;
+            editingRoadmap.horizonte_base = {
+                inicio: document.getElementById('editInicio').value,
+                fin: document.getElementById('editFin').value
+            };
+            
+            if (!editingRoadmap.title || !editingRoadmap.producto) {
+                alert('Título y Producto son requeridos');
+                return;
+            }
+            
+            document.getElementById('saveModalOverlay').classList.add('active');
+        }
+
+        function saveOverwriteRoadmap() {
+            currentRoadmapData = editingRoadmap;
+            const idx = roadmapsStore.findIndex(r => r.id === editingRoadmap.id);
+            if (idx >= 0) {
+                roadmapsStore[idx] = editingRoadmap;
+            }
+            localStorage.setItem('roadmaps', JSON.stringify(roadmapsStore));
+            closeSaveModal();
+            showView('roadmapView');
+            renderRoadmap(editingRoadmap);
+            alert('Roadmap actualizado correctamente');
+        }
+
+        function saveAsNewRoadmap() {
+            const newRoadmap = JSON.parse(JSON.stringify(editingRoadmap));
+            newRoadmap.id = 'rm-' + Date.now();
+            newRoadmap.createdAt = new Date().toISOString();
+            roadmapsStore.push(newRoadmap);
+            localStorage.setItem('roadmaps', JSON.stringify(roadmapsStore));
+            closeSaveModal();
+            showView('roadmapView');
+            currentRoadmapData = newRoadmap;
+            renderRoadmap(newRoadmap);
+            alert('Nuevo roadmap creado correctamente');
+        }
+
+        function closeSaveModal() {
+            document.getElementById('saveModalOverlay').classList.remove('active');
+        }
+
+        function cancelEditRoadmap() {
+            if (confirm('¿Descartar cambios?')) {
+                showView('roadmapView');
             }
         }
 
