@@ -1,5 +1,27 @@
 # Release Notes - Roadmap MVP
+## v0.4 - Corporate Branding
+**Fecha:** 2026-02-13
 
+### Cambios Principales
+- **Rediseño Corporativo Completo**: Aplicación de paleta de colores ENAIRE
+  - Color primario: Blue Corporativo (#003D7A)
+  - Color secundario: Golden Accent (#F39C12)
+  - Actualización de todas las variables CSS para mantener consistencia
+
+- **Mejoras Visuales**:
+  - Encabezado con gradiente corporativo y sombra mejorada
+  - Todos los botones actualizados con nuevos colores y efectos hover
+  - Tarjetas de opciones con bordes izquierdos acentuados
+  - Tablas con encabezados con gradiente corporativo
+  - Modales con borde superior dorado y sombras mejoradas
+  - Formularios con focus states corporativos
+
+- **Estabilidad y Compatibilidad**:
+  - Todos los estilos de error y éxito preservados
+  - Funcionalidad completamente conservada
+  - Solo cambios visuales/CSS, sin cambios funcionales
+
+---
 ## v0.3 - Edit Roadmap Feature
 **Fecha:** 2026-02-12
 
