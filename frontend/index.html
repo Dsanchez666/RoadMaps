@@ -293,9 +293,104 @@
             font-size: 1.1em;
             color: var(--muted);
         }
+
+        /* ========= MODAL STYLES ========= */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        .modal h2 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .modal-field {
+            margin-bottom: 15px;
+        }
+
+        .modal-field label {
+            font-weight: 600;
+            color: #667eea;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .modal-field value {
+            color: #333;
+            line-height: 1.5;
+        }
+
+        .modal-field ul {
+            margin: 5px 0;
+            padding-left: 20px;
+        }
+
+        .modal-field li {
+            margin-bottom: 5px;
+        }
+
+        .modal-close {
+            float: right;
+            cursor: pointer;
+            font-size: 28px;
+            color: #999;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: #333;
+        }
+
+        /* ========= DEPENDENCY VISUALIZATION ========= */
+        .iniciativa-row.dimmed {
+            opacity: 0.3;
+        }
+
+        .iniciativa-row.highlighted {
+            opacity: 1;
+            background-color: rgba(255, 200, 200, 0.2);
+        }
+
+        .iniciativa-bar.highlighted-bar {
+            background-color: #ff6b6b !important;
+            box-shadow: 0 0 8px rgba(255, 107, 107, 0.6);
+        }
     </style>
 </head>
 <body>
+    <!-- ========= MODAL ========= -->
+    <div id="modalOverlay" class="modal-overlay">
+        <div class="modal">
+            <span class="modal-close" onclick="closeInitiativaModal()">&times;</span>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
     <!-- ========= IMPORT VIEW ========= -->
     <div id="importView" class="view active">
         <header>
@@ -528,7 +623,123 @@
             });
 
             document.getElementById('roadmapContent').innerHTML = html;
+            attachInitiativeHoverListeners();
         }
+
+        function attachInitiativeHoverListeners() {
+            const rows = document.querySelectorAll('.iniciativa-row');
+            rows.forEach(row => {
+                row.addEventListener('mouseenter', () => {
+                    const initiativeId = row.getAttribute('data-initiative-id');
+                    highlightDependencies(initiativeId);
+                });
+                row.addEventListener('mouseleave', () => {
+                    clearDependencyHighlight();
+                });
+            });
+        }
+
+        function highlightDependencies(initiativeId) {
+            const initiative = findInitiativeById(initiativeId);
+            if (!initiative || !initiative.dependencias)
+                return;
+            const rows = document.querySelectorAll('.iniciativa-row');
+            const dependentIds = new Set();
+            
+            // Encuentra todas las iniciativas que dependen de esta
+            currentRoadmapData.iniciativas.forEach(init => {
+                if (init.dependencias && init.dependencias.length > 0) {
+                    init.dependencias.forEach(dep => {
+                        if (dep.iniciativa === initiativeId) {
+                            dependentIds.add(init.id);
+                        }
+                    });
+                }
+            });
+            
+            rows.forEach(row => {
+                const id = row.getAttribute('data-initiative-id');
+                if (id === initiativeId) {
+                    row.classList.add('highlighted');
+                } else if (dependentIds.has(id)) {
+                    row.classList.add('highlighted');
+                } else {
+                    row.classList.add('dimmed');
+                }
+            });
+        }
+
+        function clearDependencyHighlight() {
+            const rows = document.querySelectorAll('.iniciativa-row');
+            rows.forEach(row => {
+                row.classList.remove('dimmed', 'highlighted');
+            });
+        }
+
+        function findInitiativeById(id) {
+            if (!currentRoadmapData) return null;
+            return currentRoadmapData.iniciativas.find(init => init.id === id);
+        }
+
+        function showInitiativaModal(initiativeId) {
+            const initiative = findInitiativeById(initiativeId);
+            if (!initiative) return;
+            
+            const dependenciasHtml = initiative.dependencias && initiative.dependencias.length > 0
+                ? initiative.dependencias.map(dep => `<li>${dep.iniciativa} (${dep.tipo})`).join('')
+                : '<li>No tiene dependencias</li>';
+            
+            const modalContent = `
+                <h2>${initiative.nombre}</h2>
+                <div class="modal-field">
+                    <label>ID:</label>
+                    <value>${initiative.id}</value>
+                </div>
+                <div class="modal-field">
+                    <label>Descripción / Objetivo:</label>
+                    <value>${initiative.objetivo || 'Sin descripción'}</value>
+                </div>
+                <div class="modal-field">
+                    <label>Tipo:</label>
+                    <value>${initiative.tipo || 'N/A'}</value>
+                </div>
+                <div class="modal-field">
+                    <label>Expediente:</label>
+                    <value>${initiative.expediente || 'N/A'}</value>
+                </div>
+                <div class="modal-field">
+                    <label>Periode (Inicio - Fin):</label>
+                    <value>${initiative.inicio || 'N/A'} - ${initiative.fin || 'N/A'}</value>
+                </div>
+                <div class="modal-field">
+                    <label>Impacto Principal:</label>
+                    <value>${initiative.impacto_principal || 'N/A'}</value>
+                </div>
+                <div class="modal-field">
+                    <label>Usuarios Afectados:</label>
+                    <value>${initiative.usuarios_afectados || 'N/A'}</value>
+                </div>
+                <div class="modal-field">
+                    <label>Certeza:</label>
+                    <value>${initiative.certeza || 'N/A'}</value>
+                </div>
+                <div class="modal-field">
+                    <label>Dependencias:</label>
+                    <ul>${dependenciasHtml}</ul>
+                </div>
+            `;
+            
+            document.getElementById('modalContent').innerHTML = modalContent;
+            document.getElementById('modalOverlay').classList.add('active');
+        }
+
+        function closeInitiativaModal() {
+            document.getElementById('modalOverlay').classList.remove('active');
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeInitiativaModal();
+        });
 
         function renderIniciativaRow(init) {
             const inicio = init.inicio || '2026-T1';
@@ -538,7 +749,7 @@
             const [inicioYear, inicioQ] = inicio.split('-T').map(x => parseInt(x) || 0);
             const [finYear, finQ] = fin.split('-T').map(x => parseInt(x) || 0);
 
-            let html = `<div class="iniciativa-row">
+            let html = `<div class="iniciativa-row" data-initiative-id="${init.id}" onclick="showInitiativaModal('${init.id}')" style="cursor: pointer;">
                 <div class="iniciativa-name" title="${init.nombre}">
                     <strong>${init.nombre}</strong><br/>
                     <small style="color: var(--muted);">${init.expediente || ''}</small>
