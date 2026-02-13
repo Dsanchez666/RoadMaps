@@ -188,6 +188,93 @@ public class SimpleServer {
             }
         });
 
+        // Database connection endpoints
+        server.createContext("/api/db/connect", exchange -> {
+            if ("POST".equals(exchange.getRequestMethod())) {
+                try {
+                    String body = new String(exchange.getRequestBody().readAllBytes());
+                    System.out.println("[SimpleServer] DB Connect request: " + body);
+                    
+                    String host = extractField(body, "host");
+                    String port = extractField(body, "port");
+                    String database = extractField(body, "database");
+                    String username = extractField(body, "username");
+                    String password = extractField(body, "password");
+                    
+                    if (host == null || host.isEmpty()) {
+                        sendError(exchange, 400, "Host is required");
+                        return;
+                    }
+                    
+                    // Set connection parameters
+                    MySQLConnection.setConnectionParams(
+                        host != null ? host : "localhost",
+                        port != null ? port : "3306",
+                        database != null ? database : "roadmap_mvp",
+                        username != null ? username : "root",
+                        password != null ? password : ""
+                    );
+                    
+                    // Try to connect
+                    if (MySQLConnection.connect() != null) {
+                        String response = "{\"status\":\"connected\",\"message\":\"Successfully connected to database\"}";
+                        exchange.getResponseHeaders().set("Content-Type", "application/json");
+                        exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+                        exchange.sendResponseHeaders(200, 0);
+                        exchange.getResponseBody().write(response.getBytes());
+                    } else {
+                        sendError(exchange, 500, "Failed to connect to database. Check credentials and server status.");
+                    }
+                    exchange.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    sendError(exchange, 500, "Connection error: " + e.getMessage());
+                }
+            } else {
+                sendError(exchange, 405, "Method not allowed");
+            }
+        });
+
+        server.createContext("/api/db/status", exchange -> {
+            if ("GET".equals(exchange.getRequestMethod())) {
+                try {
+                    boolean connected = MySQLConnection.isConnected();
+                    String status = connected ? "connected" : "disconnected";
+                    String response = "{\"status\":\"" + status + "\",\"connectionString\":\"" + 
+                        (connected ? MySQLConnection.getConnectionInfo() : "not connected") + "\"}";
+                    
+                    exchange.getResponseHeaders().set("Content-Type", "application/json");
+                    exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+                    exchange.sendResponseHeaders(200, 0);
+                    exchange.getResponseBody().write(response.getBytes());
+                    exchange.close();
+                } catch (Exception e) {
+                    sendError(exchange, 500, "Error checking status");
+                }
+            } else {
+                sendError(exchange, 405, "Method not allowed");
+            }
+        });
+
+        server.createContext("/api/db/disconnect", exchange -> {
+            if ("POST".equals(exchange.getRequestMethod())) {
+                try {
+                    MySQLConnection.disconnect();
+                    String response = "{\"status\":\"disconnected\",\"message\":\"Disconnected from database\"}";
+                    
+                    exchange.getResponseHeaders().set("Content-Type", "application/json");
+                    exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+                    exchange.sendResponseHeaders(200, 0);
+                    exchange.getResponseBody().write(response.getBytes());
+                    exchange.close();
+                } catch (Exception e) {
+                    sendError(exchange, 500, "Disconnection error");
+                }
+            } else {
+                sendError(exchange, 405, "Method not allowed");
+            }
+        });
+
         // CORS preflight
         server.createContext("/", exchange -> {
             if ("OPTIONS".equals(exchange.getRequestMethod())) {
@@ -208,6 +295,9 @@ public class SimpleServer {
         System.out.println("  GET    /api/roadmaps        (list)");
         System.out.println("  GET    /api/roadmaps/{id}   (get)");
         System.out.println("  PUT    /api/roadmaps/{id}   (update)");
+        System.out.println("  POST   /api/db/connect      (connect to MySQL)");
+        System.out.println("  GET    /api/db/status       (check DB connection)");
+        System.out.println("  POST   /api/db/disconnect   (disconnect from MySQL)");
     }
 
     static void loadData() {

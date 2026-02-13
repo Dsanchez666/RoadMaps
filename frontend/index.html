@@ -737,6 +737,276 @@
             background-color: #ff6b6b !important;
             box-shadow: 0 0 8px rgba(255, 107, 107, 0.6);
         }
+
+        /* ========= DATABASE CONFIGURATION VIEW ========= */
+        .db-config-container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .db-config-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .db-config-card {
+            background: var(--white);
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            border-left: 4px solid var(--primary);
+        }
+
+        .db-config-card h2 {
+            color: var(--primary);
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .db-config-card > p {
+            color: var(--text-light);
+            margin-bottom: 20px;
+        }
+
+        .db-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .db-tab {
+            padding: 12px 20px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            color: var(--text-light);
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            margin-bottom: -2px;
+        }
+
+        .db-tab:hover {
+            color: var(--primary);
+        }
+
+        .db-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .db-tab-content {
+            display: none;
+        }
+
+        .db-tab-content.active {
+            display: block;
+        }
+
+        .db-form-group {
+            margin-bottom: 20px;
+        }
+
+        .db-form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .db-form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 1em;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .db-form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0, 61, 122, 0.1);
+        }
+
+        .db-form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .btn-connect,
+        .btn-json {
+            width: 100%;
+            padding: 14px;
+            margin-top: 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+
+        .btn-connect {
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        .btn-connect:hover {
+            background: var(--primary-dark);
+            box-shadow: 0 4px 12px rgba(0, 61, 122, 0.3);
+        }
+
+        .btn-json {
+            background: var(--secondary);
+            color: var(--text);
+            border: 1px solid var(--secondary);
+        }
+
+        .btn-json:hover {
+            background: rgba(243, 156, 18, 0.1);
+            border-color: var(--secondary);
+        }
+
+        .db-note {
+            margin-top: 15px;
+            padding: 12px;
+            background: rgba(0, 61, 122, 0.05);
+            border-left: 3px solid var(--primary);
+            border-radius: 4px;
+            font-size: 0.9em;
+            color: var(--text);
+        }
+
+        .db-note a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .db-note a:hover {
+            text-decoration: underline;
+        }
+
+        #mysqlStatus {
+            padding: 12px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        #mysqlStatus.success {
+            background: rgba(46, 204, 113, 0.1);
+            color: #27ae60;
+            border: 1px solid #2ecc71;
+        }
+
+        #mysqlStatus.error {
+            background: rgba(231, 76, 60, 0.1);
+            color: #c0392b;
+            border: 1px solid #e74c3c;
+        }
+
+        .db-info {
+            padding: 20px;
+            background: rgba(0, 61, 122, 0.05);
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .db-info h3 {
+            color: var(--primary);
+            margin-top: 0;
+        }
+
+        .db-info ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .db-info li {
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        .db-status-panel {
+            background: var(--white);
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            border-left: 4px solid var(--secondary);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .db-status-panel h3 {
+            color: var(--primary);
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            border-radius: 4px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .status-badge.connected {
+            background: rgba(46, 204, 113, 0.1);
+            color: #27ae60;
+        }
+
+        .status-badge.disconnected {
+            background: rgba(149, 165, 166, 0.1);
+            color: #7f8c8d;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-badge.connected .status-dot {
+            background-color: #2ecc71;
+        }
+
+        .status-badge.disconnected .status-dot {
+            background-color: #95a5a6;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .storage-info {
+            padding: 12px;
+            background: rgba(0, 61, 122, 0.05);
+            border-radius: 4px;
+            border-left: 3px solid var(--primary);
+        }
+
+        .storage-info p {
+            margin: 8px 0;
+            color: var(--text);
+            font-size: 0.95em;
+        }
     </style>
 </head>
 <body>
@@ -748,8 +1018,105 @@
         </div>
     </div>
 
+    <!-- ========= DATABASE CONNECTION VIEW ========= -->
+    <div id="dbConfigView" class="view active">
+        <header>
+            <h1>⚙️ Configuración de Base de Datos</h1>
+        </header>
+        <div class="db-config-container">
+            <div class="db-config-card">
+                <h2>Selecciona tu fuente de datos</h2>
+                <p>Elige cómo deseas almacenar y acceder a tus roadmaps:</p>
+
+                <div class="db-tabs">
+                    <button class="db-tab active" onclick="showDbTab('mysql')">
+                        🗄️ MySQL
+                    </button>
+                    <button class="db-tab" onclick="showDbTab('json')">
+                        📄 JSON
+                    </button>
+                </div>
+
+                <!-- MySQL Configuration -->
+                <div id="mysqlTab" class="db-tab-content active">
+                    <div class="db-form-group">
+                        <label for="dbHost">Host</label>
+                        <input type="text" id="dbHost" placeholder="localhost" value="localhost">
+                    </div>
+
+                    <div class="db-form-row">
+                        <div class="db-form-group">
+                            <label for="dbPort">Puerto</label>
+                            <input type="text" id="dbPort" placeholder="3306" value="3306">
+                        </div>
+                        <div class="db-form-group">
+                            <label for="dbName">Base de Datos</label>
+                            <input type="text" id="dbName" placeholder="roadmap_mvp" value="roadmap_mvp">
+                        </div>
+                    </div>
+
+                    <div class="db-form-row">
+                        <div class="db-form-group">
+                            <label for="dbUser">Usuario</label>
+                            <input type="text" id="dbUser" placeholder="root" value="root">
+                        </div>
+                        <div class="db-form-group">
+                            <label for="dbPassword">Contraseña</label>
+                            <input type="password" id="dbPassword" placeholder="(dejar vacío si no hay)">
+                        </div>
+                    </div>
+
+                    <div id="mysqlStatus" style="margin-top: 15px; padding: 10px; border-radius: 4px; display: none;"></div>
+
+                    <button class="btn-connect" onclick="connectToMySQL()">
+                        Conectar a MySQL
+                    </button>
+
+                    <p class="db-note">
+                        ℹ️ Necesitas tener MySQL instalado y corriendo. 
+                        <a href="#" onclick="alert('Ver MYSQL_SETUP.md para instrucciones de instalación')">Ver instrucciones</a>
+                    </p>
+                </div>
+
+                <!-- JSON Configuration -->
+                <div id="jsonTab" class="db-tab-content">
+                    <div class="db-info">
+                        <h3>Almacenamiento con JSON</h3>
+                        <p>Los datos se guardarán en un archivo JSON local. Esta es la opción más simple y no requiere configuración adicional.</p>
+                        <p><strong>Ventajas:</strong></p>
+                        <ul>
+                            <li>Sin dependencias externas</li>
+                            <li>Fácil de transportar</li>
+                            <li>Portable entre equipos</li>
+                        </ul>
+                        <p><strong>Desventajas:</strong></p>
+                        <ul>
+                            <li>Acceso más lento con muchos datos</li>
+                            <li>No válido para múltiples usuarios simultáneos</li>
+                        </ul>
+                    </div>
+                    <button class="btn-json" onclick="useJSONStorage()">
+                        Usar XML Almacenamiento
+                    </button>
+                </div>
+            </div>
+
+            <div class="db-status-panel">
+                <h3>Estado Actual</h3>
+                <div id="connectionStatus" class="status-badge disconnected">
+                    <span class="status-dot"></span>
+                    Desconectado
+                </div>
+                <div id="storageInfo" class="storage-info" style="display: none;">
+                    <p><strong>Almacenamiento:</strong> <span id="storageType">-</span></p>
+                    <p><strong>Conexión:</strong> <span id="connectionString">-</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ========= HOME VIEW ========= -->
-    <div id="homeView" class="view active">
+    <div id="homeView" class="view">
         <header>
             <h1>🗺️ Roadmap Manager</h1>
         </header>
@@ -1113,6 +1480,110 @@
         function goToImport() {
             showView('importView');
             document.getElementById('roadmapView').classList.remove('active');
+        }
+
+        // ========= DATABASE CONFIGURATION FUNCTIONS =========
+
+        function showDbTab(tabName) {
+            // Hide all tabs
+            document.getElementById('mysqlTab').classList.remove('active');
+            document.getElementById('jsonTab').classList.remove('active');
+            
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.db-tab').forEach(btn => btn.classList.remove('active'));
+            
+            // Show selected tab
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            
+            // Mark button as active
+            event.target.classList.add('active');
+        }
+
+        async function connectToMySQL() {
+            const host = document.getElementById('dbHost').value || 'localhost';
+            const port = document.getElementById('dbPort').value || '3306';
+            const database = document.getElementById('dbName').value || 'roadmap_mvp';
+            const username = document.getElementById('dbUser').value || 'root';
+            const password = document.getElementById('dbPassword').value || '';
+
+            const statusEl = document.getElementById('mysqlStatus');
+            statusEl.style.display = 'block';
+            statusEl.textContent = '⏳ Conectando...';
+            statusEl.classList.remove('success', 'error');
+
+            try {
+                const response = await fetch('http://localhost:8081/api/db/connect', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        host: host,
+                        port: port,
+                        database: database,
+                        username: username,
+                        password: password
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.status === 'connected') {
+                    statusEl.textContent = '✅ ' + data.message;
+                    statusEl.classList.add('success');
+                    
+                    // Update status panel
+                    const statusBadge = document.getElementById('connectionStatus');
+                    statusBadge.classList.remove('disconnected');
+                    statusBadge.classList.add('connected');
+                    statusBadge.innerHTML = '<span class="status-dot"></span>Conectado a MySQL';
+                    
+                    const storageInfo = document.getElementById('storageInfo');
+                    storageInfo.style.display = 'block';
+                    document.getElementById('storageType').textContent = 'MySQL';
+                    document.getElementById('connectionString').textContent = host + ':' + port + '/' + database;
+                    
+                    // Store connection info in localStorage
+                    localStorage.setItem('dbConfig', JSON.stringify({
+                        type: 'mysql',
+                        host: host,
+                        port: port,
+                        database: database,
+                        username: username
+                    }));
+
+                    // Go to home after 2 seconds
+                    setTimeout(() => goToHome(), 2000);
+                } else {
+                    statusEl.textContent = '❌ ' + (data.error || 'Error en la conexión');
+                    statusEl.classList.add('error');
+                }
+            } catch (err) {
+                statusEl.textContent = '❌ Error: ' + err.message;
+                statusEl.classList.add('error');
+                console.error('Connection error:', err);
+            }
+        }
+
+        function useJSONStorage() {
+            // Store preference in localStorage
+            localStorage.setItem('dbConfig', JSON.stringify({
+                type: 'json'
+            }));
+
+            // Update status panel
+            const statusBadge = document.getElementById('connectionStatus');
+            statusBadge.classList.remove('disconnected');
+            statusBadge.classList.add('connected');
+            statusBadge.innerHTML = '<span class="status-dot"></span>Almacenamiento JSON';
+            
+            const storageInfo = document.getElementById('storageInfo');
+            storageInfo.style.display = 'block';
+            document.getElementById('storageType').textContent = 'JSON Local';
+            document.getElementById('connectionString').textContent = 'roadmap_angular_mvp.json';
+
+            // Go to home after 1 second
+            setTimeout(() => goToHome(), 1000);
         }
 
         function showMessage(msg, type) {

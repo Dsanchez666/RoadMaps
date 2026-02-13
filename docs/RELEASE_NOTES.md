@@ -1,4 +1,50 @@
 # Release Notes - Roadmap MVP
+
+## v0.5 - MySQL Integration
+**Fecha:** 2026-02-13
+
+### Nuevas Características
+- **Integración con MySQL**: Soporte completo para almacenar datos en base de datos
+  - Pantalla de configuración de BBDD en inicio de aplicación
+  - Opción para conectar con credenciales personalizables
+  - Fallback automático a JSON si MySQL no está disponible
+
+- **Nuevos Endpoints API**:
+  - `POST /api/db/connect` - Conectar a MySQL con credenciales
+  - `GET /api/db/status` - Verificar estado de la conexión
+  - `POST /api/db/disconnect` - Desconectar de la BBDD
+
+- **Interfaz de Configuración**:
+  - Pantalla amigable para elegir entre MySQL o JSON
+  - Formularios con campos: host, puerto, usuario, contraseña
+  - Panel de estado que muestra la conexión actual
+  - Persiste la configuración en localStorage
+
+- **Estructura de Base de Datos**:
+  - Tabla `roadmaps` para almacenar roadmaps principales
+  - Tabla `ejes_estrategicos` con foreign key a roadmaps
+  - Tabla `iniciativas` con foreign keys a roadmaps y ejes
+  - Índices para optimizar consultas
+
+- **Documentación**:
+  - MYSQL_INTEGRATION.md con instrucciones detalladas
+  - Script SQL (backend/database/schema.sql) para crear estructura
+  - Guía de instalación de MySQL para Windows, Linux y macOS
+
+### Compatibilidad
+- ✅ JSON sigue siendo totalmente soportado
+- ✅ Todas las funcionalidades previas preservadas
+- ✅ Sin cambios en la interfaz de usuario (excepto pantalla de config)
+- ✅ Migración manual de datos posible
+
+### Notas Técnicas
+- Requiere MySQL JDBC Driver (opcional - funciona sin él usando JSON)
+- Backend compilado con soporte a java.sql
+- Clase MySQLConnection para gestionar conexiones
+- Manejo de transacciones y conexiones eficiente
+
+---
+
 ## v0.4 - Corporate Branding
 **Fecha:** 2026-02-13
 
@@ -22,6 +68,7 @@
   - Solo cambios visuales/CSS, sin cambios funcionales
 
 ---
+
 ## v0.3 - Edit Roadmap Feature
 **Fecha:** 2026-02-12
 
