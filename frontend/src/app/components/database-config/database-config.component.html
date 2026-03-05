@@ -1,0 +1,81 @@
+<div class="database-config">
+  <h2>Configuración de Base de Datos</h2>
+  
+  <!-- Database Type Selection -->
+  <div class="type-selector">
+    <label>Tipo de Base de Datos:</label>
+    <select [(ngModel)]="selectedType">
+      <option value="mysql">MySQL</option>
+      <option value="oracle">Oracle</option>
+    </select>
+  </div>
+
+  <!-- MySQL Configuration -->
+  <div *ngIf="selectedType === 'mysql'" class="config-form">
+    <h3>Configuración MySQL</h3>
+    <div>
+      <label>Host:</label>
+      <input [(ngModel)]="mysqlHost" type="text" />
+    </div>
+    <div>
+      <label>Puerto:</label>
+      <input [(ngModel)]="mysqlPort" type="number" />
+    </div>
+    <div>
+      <label>Usuario:</label>
+      <input [(ngModel)]="mysqlUser" type="text" />
+    </div>
+    <div>
+      <label>Contraseña:</label>
+      <input [(ngModel)]="mysqlPassword" type="password" />
+    </div>
+    <div>
+      <label>Base de Datos:</label>
+      <input [(ngModel)]="mysqlDatabase" type="text" />
+    </div>
+  </div>
+
+  <!-- Oracle Configuration -->
+  <div *ngIf="selectedType === 'oracle'" class="config-form">
+    <h3>Configuración Oracle</h3>
+    <div>
+      <label>Host:</label>
+      <input [(ngModel)]="oracleHost" type="text" />
+    </div>
+    <div>
+      <label>Puerto:</label>
+      <input [(ngModel)]="oraclePort" type="number" />
+    </div>
+    <div>
+      <label>Usuario:</label>
+      <input [(ngModel)]="oracleUser" type="text" />
+    </div>
+    <div>
+      <label>Contraseña:</label>
+      <input [(ngModel)]="oraclePassword" type="password" />
+    </div>
+    <div>
+      <label>SID:</label>
+      <input [(ngModel)]="oracleSid" type="text" />
+    </div>
+  </div>
+
+  <!-- Connection Status -->
+  <div *ngIf="status" class="status" [ngClass]="{ connected: status.connected }">
+    <strong>Estado:</strong> {{ status.connected ? 'Conectado' : 'Desconectado' }}
+    <p>{{ status.connectionUrl }}</p>
+  </div>
+
+  <!-- Message -->
+  <div *ngIf="message" class="message" [ngClass]="messageType">
+    {{ message }}
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="buttons">
+    <button (click)="connect()" [disabled]="connecting">
+      {{ connecting ? 'Conectando...' : 'Conectar' }}
+    </button>
+    <button (click)="disconnect()" *ngIf="status?.connected">Desconectar</button>
+  </div>
+</div>

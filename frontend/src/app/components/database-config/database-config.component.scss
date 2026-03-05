@@ -1,0 +1,129 @@
+.database-config {
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  background-color: #f9f9f9;
+
+  h2, h3 {
+    color: #333;
+    margin-top: 0;
+  }
+
+  .type-selector {
+    margin-bottom: 20px;
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    select {
+      padding: 8px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      width: 100%;
+      max-width: 300px;
+    }
+  }
+
+  .config-form {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: white;
+    border-radius: 4px;
+
+    div {
+      margin-bottom: 12px;
+    }
+
+    label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 4px;
+      color: #555;
+    }
+
+    input {
+      padding: 8px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      width: 100%;
+      max-width: 300px;
+
+      &:focus {
+        outline: none;
+        border-color: #007bff;
+        box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+      }
+    }
+  }
+
+  .status {
+    padding: 12px;
+    margin-bottom: 15px;
+    border-left: 4px solid #ff9800;
+    background-color: #fff3cd;
+    border-radius: 4px;
+
+    &.connected {
+      border-left-color: #28a745;
+      background-color: #d4edda;
+      color: #155724;
+    }
+
+    p {
+      margin: 8px 0 0 0;
+      font-size: 13px;
+    }
+  }
+
+  .message {
+    padding: 12px;
+    margin-bottom: 15px;
+    border-radius: 4px;
+    font-weight: 500;
+
+    &.success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    &.error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+  }
+
+  .buttons {
+    display: flex;
+    gap: 10px;
+
+    button {
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      background-color: #007bff;
+      color: white;
+      transition: background-color 0.3s;
+
+      &:hover:not(:disabled) {
+        background-color: #0056b3;
+      }
+
+      &:disabled {
+        background-color: #6c757d;
+        cursor: not-allowed;
+        opacity: 0.65;
+      }
+    }
+  }
+}

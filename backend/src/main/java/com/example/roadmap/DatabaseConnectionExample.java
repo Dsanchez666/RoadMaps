@@ -1,6 +1,8 @@
 package com.example.roadmap;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.Statement;
 
 /**
  * Example usage of DatabaseConnection supporting MySQL and Oracle

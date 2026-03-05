@@ -1,6 +1,6 @@
 package com.example.roadmap;
 
-import java.sql.*;
+import java.sql.Connection;
 
 /**
  * MySQL Connection wrapper for backward compatibility.

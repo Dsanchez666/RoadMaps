@@ -1,33 +1,33 @@
-Frontend Angular - guía rápida
+# Frontend Angular - guia rapida
 
-Se recomienda generar la app Angular usando Angular CLI:
+Esta carpeta YA contiene la app Angular del proyecto.
 
+## Requisitos
+- Node.js 20.19+ LTS o 22.12+
+- npm 8+
+
+## Arranque
 ```bash
-npm install -g @angular/cli
-ng new frontend --routing=false --style=scss
-cd frontend
-ng generate service services/roadmap
-ng generate component components/roadmap-list
-ng generate component components/roadmap-create
+cd roadmap-mvp-project/frontend
+npm install
+ng serve --proxy-config proxy.conf.json
 ```
 
-Ejemplo de `roadmap.service.ts` (cliente HTTP):
-
-```ts
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
-
-export interface Roadmap { id?: string; title: string; description: string }
-
-@Injectable({ providedIn: 'root' })
-export class RoadmapService {
-  base = '/api/roadmaps';
-  constructor(private http: HttpClient) {}
-  create(r: Roadmap): Observable<Roadmap> { return this.http.post<Roadmap>(this.base, r); }
-  list(): Observable<Roadmap[]> { return this.http.get<Roadmap[]>(this.base); }
-  get(id: string) { return this.http.get<Roadmap>(`${this.base}/${id}`); }
-}
+## Build y tests
+```bash
+npm run build
+npm run test:ci
 ```
 
-Recuerda configurar proxy para desarrollo (`proxy.conf.json`) para redirigir `/api` al backend (por ejemplo `http://localhost:8080`).
+## Seguridad
+```bash
+npm audit
+npm audit --omit=dev
+```
+
+Nota: `npm audit` puede reportar vulnerabilidades de herramientas de desarrollo. Revisar siempre `npm audit --omit=dev` para riesgo de runtime.
+
+## Estructura relevante
+- `src/app/services`: servicios HTTP (`roadmap.service.ts`, `database.service.ts`).
+- `src/app/components`: UI de configuracion BD, alta y listado de roadmaps.
+- `proxy.conf.json`: redireccion de `/api` al backend activo.

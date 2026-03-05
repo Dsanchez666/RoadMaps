@@ -1,12 +1,49 @@
 <div>
   <h2>Crear Roadmap</h2>
   <div>
-    <label>Título</label><br>
+    <label>Titulo</label><br>
     <input [(ngModel)]="title" />
   </div>
   <div>
-    <label>Descripción</label><br>
+    <label>Descripcion</label><br>
     <textarea [(ngModel)]="description"></textarea>
   </div>
   <button (click)="save()" [disabled]="saving">Crear</button>
+</div>
+<div>
+  <h2>Cargar desde JSON</h2>
+  <input type="file" accept=".json,application/json" (change)="onFileSelected($event)" [disabled]="uploading" />
+  <div *ngIf="uploadError">{{ uploadError }}</div>
+  <div *ngIf="uploaded > 0">Cargados: {{ uploaded }}</div>
+
+  <div *ngIf="preview">
+    <h3>Roadmap del JSON</h3>
+    <div><strong>Titulo:</strong> {{ preview.title || '(sin titulo)' }}</div>
+    <div *ngIf="preview.description"><strong>Descripcion:</strong> {{ preview.description }}</div>
+    <div *ngIf="preview.producto"><strong>Producto:</strong> {{ preview.producto }}</div>
+    <div *ngIf="preview.organizacion"><strong>Organizacion:</strong> {{ preview.organizacion }}</div>
+    <div *ngIf="preview.horizonte_base?.inicio || preview.horizonte_base?.fin">
+      <strong>Horizonte:</strong> {{ preview.horizonte_base?.inicio || '?' }} a {{ preview.horizonte_base?.fin || '?' }}
+    </div>
+    <div><strong>Ejes:</strong> {{ preview.ejes_estrategicos?.length || 0 }}</div>
+    <div><strong>Iniciativas:</strong> {{ preview.iniciativas?.length || 0 }}</div>
+
+    <div *ngIf="preview.ejes_estrategicos?.length">
+      <strong>Detalle ejes:</strong>
+      <ul>
+        <li *ngFor="let eje of preview.ejes_estrategicos">
+          {{ eje.nombre || eje.id || 'Eje' }}
+        </li>
+      </ul>
+    </div>
+
+    <div *ngIf="preview.iniciativas?.length">
+      <strong>Detalle iniciativas:</strong>
+      <ul>
+        <li *ngFor="let ini of preview.iniciativas">
+          {{ ini.nombre || ini.id || 'Iniciativa' }}
+        </li>
+      </ul>
+    </div>
+  </div>
 </div>

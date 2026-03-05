@@ -3,7 +3,7 @@
   <div *ngIf="loading">Cargando...</div>
   <ul>
     <li *ngFor="let r of roadmaps">
-      <strong>{{r.title}}</strong> — {{r.description}}
+      <strong>{{r.title}}</strong><span *ngIf="r.description"> - {{r.description}}</span>
     </li>
   </ul>
 </div>

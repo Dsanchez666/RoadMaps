@@ -1,18 +1,32 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { RoadmapService, Roadmap } from '../../services/roadmap.service';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-roadmap-list',
+  standalone: false,
   templateUrl: './roadmap-list.component.html',
   styleUrls: ['./roadmap-list.component.scss']
 })
-export class RoadmapListComponent implements OnInit {
+export class RoadmapListComponent implements OnInit, OnDestroy {
   roadmaps: Roadmap[] = [];
   loading = false;
+  private readonly destroy$ = new Subject<void>();
 
   constructor(private service: RoadmapService) {}
 
-  ngOnInit(): void { this.load(); }
+  ngOnInit(): void {
+    this.load();
+    this.service.roadmapsChanged$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.load());
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
   load() {
     this.loading = true;

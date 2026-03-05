@@ -1,22 +1,29 @@
-Roadmap Frontend
+Roadmap Frontend (Angular)
 
-Este esqueleto Angular es una implementación mínima para consumir la API backend.
+Esta carpeta contiene la app Angular del proyecto.
 
-Pasos para ejecutar:
+Pasos:
 
-1. Instalar dependencias:
+1. Instalar dependencias
 
 ```bash
 cd roadmap-mvp-project/frontend
 npm install
 ```
 
-2. Ejecutar (usa proxy para redirigir `/api` al backend):
+2. Ejecutar en desarrollo (proxy /api -> backend)
 
 ```bash
-ng serve --proxy-config proxy.conf.json
+npm run start
+```
+
+3. Validar build y tests
+
+```bash
+npm run build
+npm run test:ci
 ```
 
 Notas:
-- Si no tienes Angular CLI global, instala `npm i -g @angular/cli` o usa `npx ng`.
-- El backend debe estar corriendo en `http://localhost:8080`.
+- Usa Node.js 20.19+ LTS o 22.12+ para Angular 20.
+- El proxy de `proxy.conf.json` apunta a Spring Boot en `http://localhost:8080`.

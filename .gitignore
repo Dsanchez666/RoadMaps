@@ -1,0 +1,30 @@
+# Logs
+*.log
+*.err.log
+
+# Java / Maven
+*.class
+backend/target/
+backend/classes/
+
+# Node / Angular
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+
+# Temp/version files
+frontend/.node-version
+frontend/.nvmrc
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Local packages and bundles
+Database/mysql-5.7.30-winx64_portable/
+Database/mysql-5.7.30-winx64_portable.zip
+
+# Misc
+160
+4

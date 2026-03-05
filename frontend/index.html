@@ -1029,10 +1029,13 @@
                 <p>Elige cómo deseas almacenar y acceder a tus roadmaps:</p>
 
                 <div class="db-tabs">
-                    <button class="db-tab active" onclick="showDbTab('mysql')">
+                    <button class="db-tab active" onclick="showDbTab('mysql', this)">
                         🗄️ MySQL
                     </button>
-                    <button class="db-tab" onclick="showDbTab('json')">
+                    <button class="db-tab" onclick="showDbTab('oracle', this)">
+                        🟠 Oracle
+                    </button>
+                    <button class="db-tab" onclick="showDbTab('json', this)">
                         📄 JSON
                     </button>
                 </div>
@@ -1099,6 +1102,45 @@
                         Usar XML Almacenamiento
                     </button>
                 </div>
+
+                <!-- Oracle Configuration -->
+                <div id="oracleTab" class="db-tab-content">
+                    <div class="db-form-group">
+                        <label for="oracleHost">Host</label>
+                        <input type="text" id="oracleHost" placeholder="localhost" value="localhost">
+                    </div>
+                    <div class="db-form-row">
+                        <div class="db-form-group">
+                            <label for="oraclePort">Puerto</label>
+                            <input type="text" id="oraclePort" placeholder="1521" value="1521">
+                        </div>
+                        <div class="db-form-group">
+                            <label for="oracleSid">SID</label>
+                            <input type="text" id="oracleSid" placeholder="ORCL" value="ORCL">
+                        </div>
+                    </div>
+
+                    <div class="db-form-row">
+                        <div class="db-form-group">
+                            <label for="oracleUser">Usuario</label>
+                            <input type="text" id="oracleUser" placeholder="system" value="system">
+                        </div>
+                        <div class="db-form-group">
+                            <label for="oraclePassword">Contraseña</label>
+                            <input type="password" id="oraclePassword" placeholder="(password)">
+                        </div>
+                    </div>
+
+                    <div id="oracleStatus" style="margin-top: 15px; padding: 10px; border-radius: 4px; display: none;"></div>
+
+                    <button class="btn-connect" onclick="connectToOracle()">
+                        Conectar a Oracle
+                    </button>
+
+                    <p class="db-note">
+                        ℹ️ Necesitas el driver JDBC de Oracle disponible en el servidor backend.
+                    </p>
+                </div>
             </div>
 
             <div class="db-status-panel">
@@ -1141,6 +1183,11 @@
                     <div class="emoji">📋</div>
                     <h3>Ver Existentes</h3>
                     <p>Visualiza y gestiona los roadmaps que ya tienes cargados.</p>
+                </div>
+                <div class="option-card" onclick="showDbConfigView()">
+                    <div class="emoji">🗄️</div>
+                    <h3>Configurar Base de Datos</h3>
+                    <p>Configura conexión a MySQL u Oracle para persistencia.</p>
                 </div>
             </div>
         </div>
@@ -1477,6 +1524,10 @@
             clearCreateForm();
         }
 
+        function showDbConfigView() {
+            showView('dbConfigView');
+        }
+
         function goToImport() {
             showView('importView');
             document.getElementById('roadmapView').classList.remove('active');
@@ -1484,19 +1535,22 @@
 
         // ========= DATABASE CONFIGURATION FUNCTIONS =========
 
-        function showDbTab(tabName) {
+        function showDbTab(tabName, btnElem) {
             // Hide all tabs
-            document.getElementById('mysqlTab').classList.remove('active');
-            document.getElementById('jsonTab').classList.remove('active');
-            
+            ['mysqlTab','jsonTab','oracleTab'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.remove('active');
+            });
+
             // Remove active class from all tab buttons
             document.querySelectorAll('.db-tab').forEach(btn => btn.classList.remove('active'));
-            
+
             // Show selected tab
-            document.getElementById(tabName + 'Tab').classList.add('active');
-            
-            // Mark button as active
-            event.target.classList.add('active');
+            const tab = document.getElementById(tabName + 'Tab');
+            if (tab) tab.classList.add('active');
+
+            // Mark button as active (if provided)
+            if (btnElem && btnElem.classList) btnElem.classList.add('active');
         }
 
         async function connectToMySQL() {
@@ -1562,6 +1616,61 @@
                 statusEl.textContent = '❌ Error: ' + err.message;
                 statusEl.classList.add('error');
                 console.error('Connection error:', err);
+            }
+        }
+
+        async function connectToOracle() {
+            const host = document.getElementById('oracleHost').value || 'localhost';
+            const port = document.getElementById('oraclePort').value || '1521';
+            const sid = document.getElementById('oracleSid').value || 'ORCL';
+            const username = document.getElementById('oracleUser').value || 'system';
+            const password = document.getElementById('oraclePassword').value || '';
+
+            const statusEl = document.getElementById('oracleStatus');
+            statusEl.style.display = 'block';
+            statusEl.textContent = '⏳ Conectando...';
+            statusEl.classList.remove('success', 'error');
+
+            try {
+                const response = await fetch('http://localhost:8081/api/db/connect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'oracle',
+                        host: host,
+                        port: port,
+                        sid: sid,
+                        username: username,
+                        password: password
+                    })
+                });
+
+                const data = await response.json().catch(() => ({}));
+
+                if (response.ok && data.status === 'connected') {
+                    statusEl.textContent = '✅ ' + data.message;
+                    statusEl.classList.add('success');
+
+                    const statusBadge = document.getElementById('connectionStatus');
+                    statusBadge.classList.remove('disconnected');
+                    statusBadge.classList.add('connected');
+                    statusBadge.innerHTML = '<span class="status-dot"></span>Conectado a Oracle';
+
+                    const storageInfo = document.getElementById('storageInfo');
+                    storageInfo.style.display = 'block';
+                    document.getElementById('storageType').textContent = 'Oracle';
+                    document.getElementById('connectionString').textContent = host + ':' + port + ' SID=' + sid;
+
+                    localStorage.setItem('dbConfig', JSON.stringify({ type: 'oracle', host, port, sid, username }));
+                    setTimeout(() => goToHome(), 1500);
+                } else {
+                    statusEl.textContent = '❌ ' + (data.error || 'Error en la conexión');
+                    statusEl.classList.add('error');
+                }
+            } catch (err) {
+                statusEl.textContent = '❌ Error: ' + err.message;
+                statusEl.classList.add('error');
+                console.error('Oracle connection error:', err);
             }
         }
 

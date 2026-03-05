@@ -1,4 +1,4 @@
-# Database Connection Configuration Guide
+﻿# Database Connection Configuration Guide
 
 ## Overview
 The application now supports both **MySQL** and **Oracle** databases using JDBC. You can switch between them dynamically by configuring the appropriate connection parameters.
@@ -162,7 +162,7 @@ import org.springframework.web.bind.annotation.*;
 import java.sql.Connection;
 
 @RestController
-@RequestMapping("/api/config")
+@RequestMapping("/api/database")
 public class DatabaseConfigController {
     
     @PostMapping("/connect/mysql")
@@ -227,22 +227,22 @@ public class DatabaseConfigController {
 
 ### Connect to MySQL
 ```bash
-curl -X POST "http://localhost:8080/api/config/connect/mysql?host=localhost&port=3306&database=roadmap_mvp&user=root&password="
+curl -X POST "http://localhost:8080/api/database/connect/mysql?host=localhost&port=3306&database=roadmap_mvp&user=root&password="
 ```
 
 ### Connect to Oracle
 ```bash
-curl -X POST "http://localhost:8080/api/config/connect/oracle?host=oracle-server.company.com&port=1521&sid=ORCL&user=system&password=oracle"
+curl -X POST "http://localhost:8080/api/database/connect/oracle?host=oracle-server.company.com&port=1521&sid=ORCL&user=system&password=oracle"
 ```
 
 ### Check Connection Status
 ```bash
-curl -X GET "http://localhost:8080/api/config/status"
+curl -X GET "http://localhost:8080/api/database/status"
 ```
 
 ### Disconnect
 ```bash
-curl -X POST "http://localhost:8080/api/config/disconnect"
+curl -X POST "http://localhost:8080/api/database/disconnect"
 ```
 
 ## Troubleshooting
@@ -292,3 +292,4 @@ curl -X POST "http://localhost:8080/api/config/disconnect"
    ```properties
    logging.level.com.mysql.cj.protocol.debug=true
    ```
+
