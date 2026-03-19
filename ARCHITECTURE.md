@@ -1,163 +1,138 @@
-# 🏛️ Arquitectura Hexagonal (Puertos y Adaptadores)
+# Arquitectura Hexagonal (Puertos y Adaptadores)
 
-## Concepto
+## Resumen
 
-La arquitectura hexagonal aísla la lógica de negocio del resto de la aplicación, permitiendo:
-- ✅ Cambiar adaptadores (Web, BD, etc.) sin afectar el dominio
-- ✅ Testear casos de uso independientemente
-- ✅ Reutilizar lógica en múltiples contextos
+La solución está organizada en capas estrictas con dependencia hacia el centro:
 
-```
+1. **Domain**: modelo y contratos (puertos) sin dependencias externas.
+2. **Application**: casos de uso y orquestación; depende solo de Domain.
+3. **Infrastructure**: adaptadores de entrada/salida y configuración; depende de Application y Domain.
 
-┌─────────────────────────────────────────────────────┐
-│  Adaptadores Externos (Web, BD, etc.)              │
-├─────────────────────────────────────────────────────┤
-│  ┌──────────────────────────────────────────────┐ │
-│  │    Puertos (Interfaces)                      │ │
-│  │  ┌────────────────────────────────────────┐  │ │
-│  │  │  DOMINIO (Lógica pura)                │  │ │
-│  │  │  ├─ Entidades (Roadmap)               │  │ │
-│  │  │  └─ Reglas de negocio                 │  │ │
-│  │  └────────────────────────────────────────┘  │ │
-│  │  ┌────────────────────────────────────────┐  │ │
-│  │  │  APLICACION (Casos de Uso)            │  │ │
-│  │  │  └─ CreateRoadmapUseCase              │  │ │
-│  │  └────────────────────────────────────────┘  │ │
-│  └──────────────────────────────────────────────┘ │
-├─────────────────────────────────────────────────────┤
-│  Adaptadores IN (Entrada): REST, CLI              │
-│  Adaptadores OUT (Salida): BD, Email               │
-└─────────────────────────────────────────────────────┘
+## Estructura de paquetes (Backend)
 
 ```
-
-## Implementación en el Proyecto
-
-### 1️⃣ **DOMAIN Layer** (com.example.roadmap.domain)
-
-```java
-// Entidad del dominio - Lógica de negocio 100% pura
-Roadmap.java
-  - id: String
-  - title: String  
-  - description: String
-  - createdAt: Instant
-
-// Puerto (interfaz) - Contrato con el exterior
-RoadmapRepository.java
-  - save(Roadmap): Roadmap
-  - findById(String id): Optional<Roadmap>
-  - findAll(): List<Roadmap>
+backend/src/main/java/com/example/roadmap
+├─ domain
+│  ├─ model
+│  │  └─ Roadmap.java
+│  └─ port
+│     ├─ in
+│     │  ├─ RoadmapCommandPort.java
+│     │  └─ RoadmapQueryPort.java
+│     └─ out
+│        └─ RoadmapRepositoryPort.java
+├─ application
+│  ├─ usecase
+│  │  └─ RoadmapUseCaseService.java
+│  ├─ command
+│  │  └─ CreateRoadmapCommand.java
+│  └─ query
+│     ├─ GetRoadmapQuery.java
+│     └─ ListRoadmapsQuery.java
+└─ infrastructure
+   ├─ adapter
+   │  ├─ in
+   │  │  └─ web
+   │  │     ├─ RoadmapController.java
+   │  │     ├─ DatabaseConfigController.java
+   │  │     ├─ dto
+   │  │     │  ├─ RoadmapCreateRequest.java
+   │  │     │  ├─ RoadmapResponse.java
+   │  │     │  └─ Database*Response.java
+   │  │     └─ mapper
+   │  │        └─ RoadmapWebMapper.java
+   │  └─ out
+   │     └─ persistence
+   │        ├─ InMemoryRoadmapRepository.java
+   │        └─ FileRoadmapRepository.java
+   ├─ config
+   │  └─ RoadmapConfig.java
+   └─ db
+      ├─ DatabaseConnection.java
+      ├─ MySQLConnection.java
+      └─ DatabaseConnectionExample.java
 ```
 
-**Característica clave:** El dominio NO importa nada del framework o adaptadores.
+## Reglas de dependencia
 
----
+- **Domain** no depende de nada.
+- **Application** depende solo de **Domain**.
+- **Infrastructure** depende de **Application** y **Domain**.
 
-### 2️⃣ **APPLICATION Layer** (com.example.roadmap.application)
+## DTOs y mappers
 
-```java
-// Caso de uso - Orquestalogra interacciones entre entidades y puertos
-CreateRoadmapUseCase.java
-  - constructor(RoadmapRepository) // Inyección del puerto
-  - create(title, description): Roadmap
-  - getById(id): Optional<Roadmap>
-  - list(): List<Roadmap>
-```
+- Los controladores REST nunca exponen entidades de dominio.
+- Se usan DTOs en `infrastructure/adapter/in/web/dto`.
+- El mapeo dominio → DTO se centraliza en `RoadmapWebMapper`.
 
-**Característica clave:** Opera solo con interfaces (puertos), no implementaciones concretas.
+## Validación
 
----
+- La validación de entrada se aplica en los DTOs con Bean Validation.
 
-### 3️⃣ **ADAPTERS IN** (com.example.roadmap.adapters.in.web)
+## Persistencia
 
-```java
-// Adaptador REST - Entrada de solicitudes HTTP
-RoadmapController.java
-  - POST /api/roadmaps      → create()
-  - GET  /api/roadmaps      → list()
-  - GET  /api/roadmaps/{id} → getById()
-```
+- `RoadmapRepositoryPort` define el contrato en Domain.
+- `FileRoadmapRepository` implementa el puerto de salida con fichero configurable (`roadmap.data.path`).
+- `InMemoryRoadmapRepository` queda disponible para pruebas o ejecuciones efímeras.
 
-**Características:**
-- Traduce HTTP a llamadas de caso de uso
-- Instancia el caso de uso (inyección manual o Spring)
-- Serializa respuestas a JSON
-
----
-
-### 4️⃣ **ADAPTERS OUT** (com.example.roadmap.adapters.out.persistence)
-
-```java
-// Adaptador de persistencia - Salida para guardar datos
-InMemoryRoadmapRepository.java
-  - Implementa RoadmapRepository (el puerto)
-  - Almacena en Map<String, Roadmap> en memoria
-  - Sustituible: JPA, MongoDB, ficheros, etc.
-```
-
-**Cambio fácil:** Reemplazar `InMemoryRoadmapRepository` por `JpaRoadmapRepository` sin tocar dominio ni aplicación.
-
----
-
-## Flujo de una solicitud
+## Frontend (Angular)
 
 ```
-Cliente HTTP
-     ↓
-[1] RoadmapController (Adapter IN)
-     ↓
-[2] CreateRoadmapUseCase (Application)
-     ↓
-[3] Roadmap (Domain)
-     ↓
-[4] RoadmapRepository (Puerto - interfaz)
-     ↓
-[5] InMemoryRoadmapRepository (Adapter OUT)
-     ↓
-Respuesta JSON
+frontend/src/app
+├─ features
+│  ├─ roadmaps
+│  │  ├─ components
+│  │  ├─ services
+│  │  └─ utils
+│  └─ database
+│     ├─ components
+│     └─ services
+└─ shared
+   └─ models
 ```
 
-**Lo importante:** Si cambias del adaptador [5], el flujo 1-4 permanece igual.
+- Los modelos compartidos están en `shared/models`.
+- La lógica de parsing/import se extrae a `features/roadmaps/utils`.
 
----
+## Tests
 
-## Ventajas en este proyecto
+- Unit tests en `backend/src/test/java` para casos de uso y persistencia.
 
-| Aspecto | Beneficio |
-|--------|-----------|
-| **Testabilidad** | Tests unitarios de `CreateRoadmapUseCase` sin HTTP/BD |
-| **Escalabilidad** | Añadir nuevos adaptadores (GraphQL, AMQP) sin cambios |
-| **Mantenibilidad** | Lógica de negocio centralizada y aislada |
-| **Independencia** | No acoplado a Spring, JPA ni ningún framework |
+## Validacion de arquitectura (ArchUnit)
 
----
+Las reglas se ejecutan en tests y bloquean builds cuando hay incumplimientos.
 
-## Extensiones futuras (sin cambiar lo existente)
+**Ubicacion de las reglas**
+- `backend/src/test/java/com/example/roadmap/architecture/HexagonalArchitectureTest.java`
 
-```java
-// Agregar JPA
-@Repository
-public class JpaRoadmapRepository implements RoadmapRepository { ... }
+**Limitaciones activas**
+1. **Domain no depende de Application/Infrastructure**
+   - Paquetes afectados: `com.example.roadmap.domain..`
+2. **Application no depende de Infrastructure**
+   - Paquetes afectados: `com.example.roadmap.application..`
+3. **Domain no puede depender de frameworks**
+   - Bloquea dependencias a `org.springframework..`, `jakarta..`, `javax..`, `com.fasterxml..` desde Domain.
+4. **Application no puede depender de frameworks**
+   - Bloquea dependencias a `org.springframework..`, `jakarta..`, `javax..`, `com.fasterxml..` desde Application.
+5. **Adapters deben vivir en Infrastructure**
+   - Cualquier paquete con `..adapters..` debe residir en `com.example.roadmap.infrastructure..`.
+6. **Controllers solo en Web Adapter**
+   - Clases `*Controller` deben residir en `com.example.roadmap.infrastructure.adapter.in.web..`.
+7. **Config solo en Infrastructure**
+   - Clases `*Config` deben residir en `com.example.roadmap.infrastructure..`.
+8. **Puertos solo en `domain/port/in` y `domain/port/out`**
+   - Clases `*Port` dentro de `domain` deben estar en esos paquetes.
+9. **Application no referencia Web Adapter**
+   - Prohibe dependencia a `com.example.roadmap.infrastructure.adapter.in.web..` desde Application.
+10. **Web Adapter no referencia Persistencia**
+    - Prohibe dependencia a `com.example.roadmap.infrastructure.adapter.out.persistence..` desde Web.
+11. **`java.sql` solo en `infrastructure.db`**
+    - Fuera de `com.example.roadmap.infrastructure.db..` no se permite `java.sql..`.
+12. **DTOs solo en `infrastructure.adapter.in.web.dto`**
+    - Clases `*Request` y `*Response` deben residir en `com.example.roadmap.infrastructure.adapter.in.web.dto..`.
 
-// Agregar GraphQL
-@Component
-public class RoadmapGraphQLAdapterIN { ... }
-
-// Agregar eventos
-public class RoadmapCreatedEvent { ... }
+**Como lanzar el test**
+```bash
+cd backend
+mvn test
 ```
-
-Todos ellos funcionarán con `CreateRoadmapUseCase` sin modificación.
-
----
-
-## Suma ry
-
-✅ **Este proyecto implementa Clean Architecture** mediante:
-1. Dominio desacoplado (sin dependencias externas)
-2. Casos de uso como orquestadores
-3. Interfaces (puertos) hacia adaptadores
-4. Múltiples adaptadores (es fácil cambiarlos)
-
-Es el punto de partida perfecto para evolucionara arquitectura en producción.

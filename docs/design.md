@@ -3,8 +3,9 @@
 ## Estructura (hexagonal)
 - Domain: entidades y contratos (interfaces) - `com.example.roadmap.domain`
 - Application: casos de uso que orquestan el dominio - `com.example.roadmap.application`
-- Adapters In: controladores REST - `com.example.roadmap.adapters.in` 
-- Adapters Out: implementaciones de persistencia - `com.example.roadmap.adapters.out`
+- Infrastructure: adaptadores REST y persistencia - `com.example.roadmap.infrastructure.adapter`
+  - Web (in): `com.example.roadmap.infrastructure.adapter.in.web`
+  - Persistencia (out): `com.example.roadmap.infrastructure.adapter.out.persistence`
 
 ## API REST
 - `POST /api/roadmaps` -> crear roadmap (payload: title, description)
@@ -12,7 +13,7 @@
 - `GET /api/roadmaps/{id}` -> obtener
 
 ## Extensibilidad
-- Reemplazar `InMemoryRoadmapRepository` por una implementación JPA para persistencia real.
+- Reemplazar `FileRoadmapRepository` por una implementación JPA para persistencia real.
 - Añadir validaciones y DTOs más ricos.
 
 ## Pruebas

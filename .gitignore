@@ -6,6 +6,8 @@
 *.class
 backend/target/
 backend/classes/
+.m2repo/
+backend/data/
 
 # Node / Angular
 frontend/node_modules/
