@@ -10,21 +10,16 @@
   - Fallback automático a JSON si MySQL no está disponible
 
 - **Nuevos Endpoints API**:
-  - `POST /api/db/connect` - Conectar a MySQL con credenciales
-  - `GET /api/db/status` - Verificar estado de la conexión
-  - `POST /api/db/disconnect` - Desconectar de la BBDD
+  - `POST /api/database/connect/mysql` - Conectar a MySQL con credenciales
+  - `POST /api/database/connect/oracle` - Conectar a Oracle con credenciales
+  - `GET /api/database/status` - Verificar estado de la conexión
+  - `POST /api/database/disconnect` - Desconectar de la BBDD
 
 - **Interfaz de Configuración**:
   - Pantalla amigable para elegir entre MySQL o JSON
   - Formularios con campos: host, puerto, usuario, contraseña
   - Panel de estado que muestra la conexión actual
   - Persiste la configuración en localStorage
-
-- **Estructura de Base de Datos**:
-  - Tabla `roadmaps` para almacenar roadmaps principales
-  - Tabla `ejes_estrategicos` con foreign key a roadmaps
-  - Tabla `iniciativas` con foreign keys a roadmaps y ejes
-  - Índices para optimizar consultas
 
 - **Documentación**:
   - MYSQL_INTEGRATION.md con instrucciones detalladas
@@ -38,10 +33,8 @@
 - ✅ Migración manual de datos posible
 
 ### Notas Técnicas
-- Requiere MySQL JDBC Driver (opcional - funciona sin él usando JSON)
-- Backend compilado con soporte a java.sql
-- Clase MySQLConnection para gestionar conexiones
-- Manejo de transacciones y conexiones eficiente
+- Dependencia JDBC de MySQL incluida en `pom.xml`
+- Backend expuesto como Spring Boot (puerto 8080)
 
 ---
 
@@ -182,13 +175,13 @@
 - **Visualización de Timeline**: Visor de roadmap con timeline de 20 trimestres (5 años)
 - **Ejes Estratégicos**: Agrupación visual de iniciativas por ejes con colores distintos
 - **Iniciativas**: Visualización de barras de tiempo con indicador de certeza
-- **Persistencia**: Almacenamiento en servidor mediante SimpleServer y archivos JSON
+- **Persistencia**: Almacenamiento en fichero (`data/roadmaps.txt`) mediante backend Spring Boot
 - **Descarga de Roadmap**: Opción para descargar el roadmap en formato JSON
 
 ### Componentes Principales
-- **Backend**: SimpleServer.java con API REST para CRUD de roadmaps
-- **Frontend**: HTML/JavaScript con interfaz para importar y visualizar roadmaps
-- **Datos**: Estructura JSON con producto, organización, ejes_estratégicos, iniciativas
+- **Backend**: Spring Boot con API REST para CRUD de roadmaps
+- **Frontend**: Angular con interfaz para importar y visualizar roadmaps
+- **Datos**: Estructura JSON con producto, organización, ejes_estrategicos, iniciativas
 
 ### Estructura de Datos
 ```json
@@ -217,4 +210,3 @@
   ]
 }
 ```
-

@@ -2,7 +2,7 @@
 
 ## Descripción de cambios
 
-La versión v0.5 introduce soporte completo para almacenamiento en **MySQL**, manteniendo compatibilidad total con **JSON**. 
+La versión v0.5 introduce soporte completo para almacenamiento en **MySQL**, manteniendo compatibilidad total con **JSON**.
 
 ### Nuevas características
 
@@ -11,10 +11,11 @@ La versión v0.5 introduce soporte completo para almacenamiento en **MySQL**, ma
    - Opción para usar almacenamiento JSON local
    - Visualización del estado de la conexión
 
-2. **API de base de datos**: Nuevos endpoints REST
-   - `POST /api/db/connect` - Conectar a MySQL
-   - `GET /api/db/status` - Verificar estado de conexión
-   - `POST /api/db/disconnect` - Desconectar
+2. **API de base de datos**: Endpoints REST
+   - `POST /api/database/connect/mysql` - Conectar a MySQL
+   - `POST /api/database/connect/oracle` - Conectar a Oracle
+   - `GET /api/database/status` - Verificar estado de conexión
+   - `POST /api/database/disconnect` - Desconectar
 
 3. **Datos de conexión personalizables**:
    - Host (default: localhost)
@@ -27,7 +28,7 @@ La versión v0.5 introduce soporte completo para almacenamiento en **MySQL**, ma
 
 ### Requisitos previos
 
-- Java JDK 8+
+- Java 17+
 - MySQL Server 5.7+ (para usar la opción MySQL)
 
 ### Pasos de instalación
@@ -73,41 +74,25 @@ O directamente desde terminal:
 mysql -u root -p < backend/database/schema.sql
 ```
 
-#### 3. Descargar el driver JDBC de MySQL (opcional)
+#### 3. Driver JDBC de MySQL
 
-Si deseas usar MySQL necesitas descargar el driver JDBC:
+El proyecto ya incluye la dependencia de MySQL en el `pom.xml`. No es necesario descargar el driver manualmente.
 
-```bash
-# Descargar mysql-connector-java
-# Desde: https://dev.mysql.com/downloads/connector/j/
-
-# O usar wget/curl (si tienes estas herramientas)
-mkdir -p backend/lib
-wget https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java-8.0.33.jar
-# Guardar como: backend/lib/mysql-connector-java.jar
-```
-
-**Nota:** Si el driver no está disponible, la aplicación funcionará normalmente con JSON.
-
-#### 4. Iniciar los servidores
+#### 4. Iniciar backend y frontend
 
 ```bash
 # Terminal 1: Backend
-cd roadmap-mvp-project/backend
-java -cp "target/classes;lib/*;." com.example.roadmap.SimpleServer 8080
+cd C:\SideProjects\RoadMaps\backend
+mvn spring-boot:run
 
 # Terminal 2: Frontend
-cd roadmap-mvp-project/frontend
-java FrontendServer 3000
+cd C:\SideProjects\RoadMaps\frontend
+npm run start
 ```
 
 #### 5. Acceder a la aplicación
 
-Abre tu navegador en: `http://localhost:3000`
-
-Se mostrará la pantalla de configuración de BBDD. Elige:
-- **MySQL**: Si tienes MySQL instalado y quieres usar esa opción
-- **JSON**: Si prefieres usar almacenamiento local en JSON
+Abre tu navegador en: `http://localhost:4200`
 
 ## Estructura de la base de datos
 
@@ -152,29 +137,12 @@ Se mostrará la pantalla de configuración de BBDD. Elige:
 - updated_at (TIMESTAMP)
 ```
 
-## Funcionalidades preservadas
-
-✅ Crear nuevos roadmaps
-✅ Importar roadmaps desde JSON
-✅ Listar roadmaps existentes
-✅ Ver roadmaps con visualización timeline
-✅ Editar roadmaps (ejes e iniciativas)
-✅ Eliminar roadmaps
-✅ Modales de detalles
-✅ Visualización de dependencias
-✅ Descarga de roadmaps
-
 ## Solución de problemas
 
 ### Error: "Failed to connect to database"
 - Verifica que MySQL esté corriendo
 - Comprueba las credenciales de conexión
 - Asegúrate de haber ejecutado el script de schema.sql
-
-### Error: "MySQL JDBC driver not found"
-- Descarga el driver JDBC desde: https://dev.mysql.com/downloads/connector/j/
-- Colócalo en `backend/lib/mysql-connector-java.jar`
-- Compila de nuevo el backend
 
 ### Cambiar de MySQL a JSON o viceversa
 - Abre el navegador con las herramientas de desarrollador (F12)
@@ -187,24 +155,6 @@ Se mostrará la pantalla de configuración de BBDD. Elige:
 localStorage.removeItem('dbConfig');
 location.reload();
 ```
-
-## Ventajas de cada opción
-
-### MySQL
-✅ Escalable para múltiples usuarios
-✅ Consultas avanzadas posibles
-✅ Backup y recuperación profesional
-✅ Mayor capacidad de datos
-❌ Requiere instalación y configuración
-❌ Overhead mayor para pocos datos
-
-### JSON
-✅ Fácil de usar sin configuración
-✅ Portable (un solo archivo)
-✅ Bajo overhead
-✅ Ideal para desarrollo/pruebas
-❌ No es escalable para usuarios simultáneos
-❌ Más lento con muchos datos
 
 ## Próximas mejoras planeadas
 
