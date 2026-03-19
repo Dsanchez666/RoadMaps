@@ -1,0 +1,20 @@
+<div class="page">
+  <div class="toolbar">
+    <button routerLink="/">Volver</button>
+    <button *ngIf="roadmap" [routerLink]="['/roadmaps', roadmap.id, 'edit']">Editar</button>
+  </div>
+
+  <div *ngIf="loading">Cargando...</div>
+
+  <div *ngIf="!loading && roadmap">
+    <app-roadmap-timeline
+      [data]="config"
+      [allowLoad]="true"
+      (dataChange)="onConfigChange($event)"
+    ></app-roadmap-timeline>
+  </div>
+
+  <div *ngIf="!loading && !roadmap" class="note">
+    Roadmap no encontrado.
+  </div>
+</div>

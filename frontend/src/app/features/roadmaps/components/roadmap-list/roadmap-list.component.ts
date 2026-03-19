@@ -13,9 +13,22 @@ import { Roadmap } from '../../../../shared/models/roadmap.model';
 export class RoadmapListComponent implements OnInit, OnDestroy {
   roadmaps: Roadmap[] = [];
   loading = false;
+  searchTerm = '';
   private readonly destroy$ = new Subject<void>();
 
   constructor(private service: RoadmapService) {}
+
+  get filteredRoadmaps(): Roadmap[] {
+    const term = this.searchTerm.trim().toLowerCase();
+    if (!term) {
+      return this.roadmaps;
+    }
+    return this.roadmaps.filter(r =>
+      (r.title || '').toLowerCase().includes(term) ||
+      (r.description || '').toLowerCase().includes(term) ||
+      (r.id || '').toLowerCase().includes(term)
+    );
+  }
 
   ngOnInit(): void {
     this.load();

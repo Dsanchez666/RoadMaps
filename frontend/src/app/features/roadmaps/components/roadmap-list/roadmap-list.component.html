@@ -1,9 +1,28 @@
-<div>
-  <h2>Lista</h2>
+<section class="list-section">
+  <div class="list-header">
+    <h2>Listado</h2>
+    <input
+      type="text"
+      placeholder="Buscar por titulo, descripcion o id"
+      [(ngModel)]="searchTerm"
+    />
+  </div>
+
   <div *ngIf="loading">Cargando...</div>
-  <ul>
-    <li *ngFor="let r of roadmaps">
-      <strong>{{r.title}}</strong><span *ngIf="r.description"> - {{r.description}}</span>
-    </li>
-  </ul>
-</div>
+
+  <div class="grid">
+    <div class="card" *ngFor="let r of filteredRoadmaps">
+      <div class="card-title">{{ r.title }}</div>
+      <div class="card-desc" *ngIf="r.description">{{ r.description }}</div>
+      <div class="card-meta">ID: {{ r.id }}</div>
+      <div class="card-actions">
+        <a [routerLink]="['/roadmaps', r.id, 'view']">Ver</a>
+        <a [routerLink]="['/roadmaps', r.id, 'edit']">Editar</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="empty" *ngIf="!loading && filteredRoadmaps.length === 0">
+    No hay roadmaps que coincidan con la búsqueda.
+  </div>
+</section>

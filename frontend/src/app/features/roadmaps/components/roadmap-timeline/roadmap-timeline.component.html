@@ -1,0 +1,141 @@
+<h1>Roadmap Estratégico</h1>
+
+<div class="top-tools" *ngIf="allowLoad">
+  <button (click)="selectJsonFile(jsonFile)">Cargar JSON</button>
+  <span class="file-pill">{{ jsonFilename }}</span>
+  <button (click)="openLegend()">Leyenda</button>
+</div>
+
+<div class="timeline-header">
+  <div class="timeline-years">
+    <div class="label">Año</div>
+    <div>2026</div>
+    <div>2027</div>
+    <div>2028</div>
+    <div>2029</div>
+    <div>2030</div>
+  </div>
+  <div class="timeline-grid">
+    <div class="label">Eje / Tiempo</div>
+    <div>T1</div><div>T2</div><div>T3</div><div>T4</div>
+    <div>T1</div><div>T2</div><div>T3</div><div>T4</div>
+    <div>T1</div><div>T2</div><div>T3</div><div>T4</div>
+    <div>T1</div><div>T2</div><div>T3</div><div>T4</div>
+    <div>T1</div><div>T2</div><div>T3</div><div>T4</div>
+  </div>
+</div>
+
+<div class="roadmap" *ngIf="hasData; else emptyState">
+  <div class="eje" *ngFor="let eje of data?.ejes_estrategicos">
+    <div class="eje-header" (click)="toggleAxis(eje.id)">
+      <span>{{ eje.nombre }}</span>
+      <span>{{ isAxisOpen(eje.id) ? '[–]' : '[+]' }}</span>
+    </div>
+    <div class="eje-content" [class.open]="isAxisOpen(eje.id)">
+      <div class="eje-row">
+        <div class="eje-label">{{ eje.nombre }}</div>
+        <ng-container *ngFor="let init of data?.iniciativas">
+          <div
+            class="initiative"
+            *ngIf="axisMatches(init, eje.id)"
+            [attr.data-certeza]="init.certeza"
+            [class.fade]="isFaded(init.id)"
+            [ngStyle]="{ gridColumn: (toGridRange(init).inicio + 1) + ' / ' + (toGridRange(init).fin + 2) }"
+            (mouseenter)="onEnter(init)"
+            (mouseleave)="onLeave()"
+            (click)="openModal(init)"
+          >
+            {{ init.nombre }}
+          </div>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #emptyState>
+  <div class="empty-state">
+    <svg viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg" aria-label="Sin configurar">
+      <rect x="20" y="20" width="560" height="160" rx="16" fill="#ffffff" stroke="#e5e7eb" stroke-width="2" />
+      <text x="300" y="110" text-anchor="middle" font-family="system-ui, sans-serif" font-size="32" fill="#9ca3af" letter-spacing="2">SIN CONFIGURAR</text>
+    </svg>
+  </div>
+</ng-template>
+
+<div id="modal" [style.display]="modalOpen ? 'flex' : 'none'">
+  <div class="modal-box" *ngIf="modalInit">
+    <h2>{{ modalInit.nombre }}</h2>
+
+    <div class="modal-meta">
+      <div>
+        <div class="label">ID</div>
+        <div>{{ modalInit.id || '-' }}</div>
+      </div>
+      <div>
+        <div class="label">Eje</div>
+        <div>{{ modalInit.eje || '-' }}</div>
+      </div>
+      <div>
+        <div class="label">Inicio</div>
+        <div>{{ modalInit.inicio || '-' }}</div>
+      </div>
+      <div>
+        <div class="label">Fin</div>
+        <div>{{ modalInit.fin || '-' }}</div>
+      </div>
+    </div>
+
+    <div class="modal-section" *ngIf="modalInit.certeza">
+      <span class="badge" [ngClass]="modalInit.certeza">{{ certezaLabel(modalInit.certeza) }}</span>
+    </div>
+
+    <div class="modal-section" *ngIf="modalInit.dependencias?.length">
+      <h3>Dependencias</h3>
+      <div>
+        <span class="chip" *ngFor="let dep of modalInit.dependencias">{{ dep.iniciativa }}</span>
+      </div>
+    </div>
+
+    <button (click)="closeModal()">Cerrar</button>
+  </div>
+</div>
+
+<div id="legend-modal" [style.display]="legendOpen ? 'flex' : 'none'">
+  <div class="modal-box">
+    <h2>Leyenda del roadmap</h2>
+
+    <h3>Certeza de las iniciativas</h3>
+    <ul>
+      <li>
+        <span class="legend-swatch committed"></span>
+        <strong>Comprometido</strong> – Iniciativa aprobada o en ejecución
+      </li>
+      <li>
+        <span class="legend-swatch planned"></span>
+        <strong>Planificado</strong> – Previsto, sujeto a ajuste
+      </li>
+      <li>
+        <span class="legend-swatch exploratory"></span>
+        <strong>Exploratorio</strong> – Intención estratégica, no compromiso
+      </li>
+    </ul>
+
+    <h3>Ejes estratégicos</h3>
+    <p>
+      Cada eje representa una línea estratégica del producto.
+      Puede colapsarse para una vista ejecutiva o desplegarse para
+      ver el detalle operativo.
+    </p>
+
+    <h3>Dependencias</h3>
+    <ul>
+      <li><strong>Interacción</strong>: al pasar el ratón por una iniciativa</li>
+      <li>Se resaltan las iniciativas relacionadas</li>
+      <li>El resto del roadmap se atenúa</li>
+    </ul>
+
+    <button (click)="closeLegend()">Cerrar</button>
+  </div>
+</div>
+
+<input #jsonFile class="visually-hidden" type="file" accept=".json" (change)="handleJsonFileSelect(jsonFile.files?.[0])" />

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { DatabaseService } from '../../services/database.service';
 import { DatabaseStatus, MySQLConfig, OracleConfig } from '../../../../shared/models/database.model';
 
@@ -9,6 +9,8 @@ import { DatabaseStatus, MySQLConfig, OracleConfig } from '../../../../shared/mo
   styleUrls: ['./database-config.component.scss']
 })
 export class DatabaseConfigComponent implements OnInit {
+  @Output() connectedChange = new EventEmitter<boolean>();
+
   selectedType: 'mysql' | 'oracle' = 'mysql';
   status: DatabaseStatus | null = null;
   connecting = false;
@@ -19,7 +21,7 @@ export class DatabaseConfigComponent implements OnInit {
   mysqlPort = 3306;
   mysqlUser = 'root';
   mysqlPassword = '';
-  mysqlDatabase = 'roadmap';
+  mysqlDatabase = 'roadmap_mvp';
 
   oracleHost = 'localhost';
   oraclePort = 1521;
@@ -37,9 +39,11 @@ export class DatabaseConfigComponent implements OnInit {
     this.databaseService.getStatus().subscribe({
       next: (status) => {
         this.status = status;
+        this.connectedChange.emit(Boolean(status?.connected));
       },
       error: () => {
         this.status = null;
+        this.connectedChange.emit(false);
       }
     });
   }
@@ -62,11 +66,13 @@ export class DatabaseConfigComponent implements OnInit {
           this.message = 'Conexión a MySQL exitosa';
           this.checkStatus();
           this.connecting = false;
+          this.connectedChange.emit(true);
         },
         error: (err) => {
           this.messageType = 'error';
           this.message = `Error: ${err.error?.message || err.message}`;
           this.connecting = false;
+          this.connectedChange.emit(false);
         }
       });
     } else {
@@ -83,11 +89,13 @@ export class DatabaseConfigComponent implements OnInit {
           this.message = 'Conexión a Oracle exitosa';
           this.checkStatus();
           this.connecting = false;
+          this.connectedChange.emit(true);
         },
         error: (err) => {
           this.messageType = 'error';
           this.message = `Error: ${err.error?.message || err.message}`;
           this.connecting = false;
+          this.connectedChange.emit(false);
         }
       });
     }
@@ -99,10 +107,12 @@ export class DatabaseConfigComponent implements OnInit {
         this.messageType = 'success';
         this.message = 'Desconectado';
         this.status = null;
+        this.connectedChange.emit(false);
       },
       error: (err) => {
         this.messageType = 'error';
         this.message = `Error: ${err.error?.message || err.message}`;
+        this.connectedChange.emit(false);
       }
     });
   }
