@@ -131,7 +131,7 @@ public class DatabaseConnection {
 
         try {
             String url = "jdbc:mysql://" + config.host + ":" + config.port + "/" + config.database + 
-                        "?useSSL=false&serverTimezone=UTC&useUnicode=true&characterEncoding=UTF-8";
+                        "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&useUnicode=true&characterEncoding=UTF-8";
             
             Properties props = new Properties();
             props.setProperty("user", config.user);

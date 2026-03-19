@@ -1,5 +1,7 @@
 package com.example.roadmap.infrastructure.adapter.in.web;
 
+import com.example.roadmap.application.query.RoadmapConfigQueryService;
+import com.example.roadmap.application.query.RoadmapConfigView;
 import com.example.roadmap.domain.model.Roadmap;
 import com.example.roadmap.domain.port.in.RoadmapCommandPort;
 import com.example.roadmap.domain.port.in.RoadmapQueryPort;
@@ -25,10 +27,14 @@ import java.util.List;
 public class RoadmapController {
     private final RoadmapCommandPort commandPort;
     private final RoadmapQueryPort queryPort;
+    private final RoadmapConfigQueryService configQueryService;
 
-    public RoadmapController(RoadmapCommandPort commandPort, RoadmapQueryPort queryPort) {
+    public RoadmapController(RoadmapCommandPort commandPort,
+                             RoadmapQueryPort queryPort,
+                             RoadmapConfigQueryService configQueryService) {
         this.commandPort = commandPort;
         this.queryPort = queryPort;
+        this.configQueryService = configQueryService;
     }
 
     @PostMapping
@@ -49,5 +55,14 @@ public class RoadmapController {
                 .map(RoadmapWebMapper::toResponse)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{id}/config")
+    public ResponseEntity<RoadmapConfigView> getConfig(@PathVariable String id) {
+        RoadmapConfigView cfg = configQueryService.getById(id);
+        if (cfg == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(cfg);
     }
 }

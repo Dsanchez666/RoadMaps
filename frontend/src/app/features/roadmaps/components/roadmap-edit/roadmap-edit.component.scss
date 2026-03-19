@@ -1,0 +1,22 @@
+.page { padding: 16px; }
+.toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; }
+.card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.card h2 { margin: 0 0 12px 0; font-size: 1rem; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+label { font-size: 0.75rem; color: #6b7280; display: block; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+input, textarea, select { width: 100%; padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 0.9rem; background: #fff; color: #111827; }
+textarea { min-height: 140px; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size: 0.8rem; }
+.list { display: grid; gap: 10px; }
+.pill { display: inline-block; padding: 2px 8px; background: #f3f4f6; border-radius: 999px; font-size: 0.75rem; color: #111827; margin-left: 6px; }
+.divider { height: 1px; background: #e5e7eb; margin: 10px 0; }
+.deps { display: grid; gap: 8px; margin-top: 8px; }
+.deps-item { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end; }
+.file-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #eef2ff; color: #1e3a8a; font-size: 0.75rem; border: 1px solid #dbeafe; }
+.status { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; border: 1px solid #e5e7eb; color: #111827; background: #f9fafb; }
+.status.dirty { border-color: #f59e0b; color: #92400e; background: #fffbeb; }
+.subtle { color: #6b7280; font-size: 0.85rem; }
+button.primary { background: #1f6feb; color: #fff; border-color: #1f6feb; }
+button.danger { color: #fff; background: #b91c1c; border-color: #b91c1c; }
+@media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }

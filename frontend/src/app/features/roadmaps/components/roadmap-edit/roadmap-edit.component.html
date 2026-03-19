@@ -1,0 +1,187 @@
+<div class="page">
+  <div class="toolbar">
+    <button routerLink="/">Volver</button>
+    <button *ngIf="roadmap" [routerLink]="['/roadmaps', roadmap.id, 'view']">Ver</button>
+  </div>
+
+  <div *ngIf="loading">Cargando...</div>
+
+  <div *ngIf="!loading && roadmap">
+    <div class="grid">
+      <div class="card">
+        <h2>Datos base</h2>
+        <div class="row">
+          <div>
+            <label>Producto</label>
+            <input [(ngModel)]="state.producto" (input)="onBaseChange()" type="text" />
+          </div>
+          <div>
+            <label>Organizacion</label>
+            <input [(ngModel)]="state.organizacion" (input)="onBaseChange()" type="text" />
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Horizonte inicio</label>
+            <input [(ngModel)]="state.horizonte_base.inicio" (input)="onBaseChange()" type="text" placeholder="2026-T1" />
+          </div>
+          <div>
+            <label>Horizonte fin</label>
+            <input [(ngModel)]="state.horizonte_base.fin" (input)="onBaseChange()" type="text" placeholder="2030-T4" />
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="toolbar">
+          <button class="primary" (click)="addAxis()">+ Eje estrategico</button>
+          <button class="primary" (click)="addInitiative()">+ Iniciativa</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>JSON generado</h2>
+        <textarea [value]="jsonOutput" readonly></textarea>
+        <div class="toolbar">
+          <button (click)="downloadJson()">Descargar</button>
+          <button class="primary" (click)="jsonFile.click()">Cargar JSON</button>
+          <button class="primary" [disabled]="!isDirty" (click)="saveChanges()">Guardar y descargar</button>
+          <button [disabled]="!isDirty" (click)="discardChanges()">Descartar cambios</button>
+          <span class="file-pill">{{ currentJsonName }}</span>
+          <span class="status" [class.dirty]="isDirty">{{ isDirty ? 'Cambios sin guardar' : 'Sin cambios' }}</span>
+        </div>
+        <p class="subtle">El navegador no puede sobrescribir el archivo original: al guardar se descarga una nueva version.</p>
+        <input #jsonFile class="visually-hidden" type="file" accept=".json" (change)="loadJson(jsonFile.files?.[0])" />
+      </div>
+    </div>
+
+    <div class="grid" style="margin-top:16px;">
+      <div class="card">
+        <h2>Ejes estrategicos <span class="pill">{{ state.ejes_estrategicos.length }}</span></h2>
+        <div class="list">
+          <div class="card" *ngFor="let axis of state.ejes_estrategicos; let i = index">
+            <div class="row-3">
+              <div>
+                <label>ID</label>
+                <input [(ngModel)]="axis.id" (input)="markDirty(); updateJson()" type="text" />
+              </div>
+              <div>
+                <label>Nombre</label>
+                <input [(ngModel)]="axis.nombre" (input)="markDirty(); updateJson()" type="text" />
+              </div>
+              <div>
+                <label>Color</label>
+                <input [(ngModel)]="axis.color" (input)="markDirty(); updateJson()" type="text" placeholder="#D32F2F" />
+              </div>
+            </div>
+            <div>
+              <label>Descripcion</label>
+              <input [(ngModel)]="axis.descripcion" (input)="markDirty(); updateJson()" type="text" />
+            </div>
+            <div class="toolbar" style="margin-top:8px;">
+              <button class="danger" (click)="removeAxis(i)">Eliminar eje</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Iniciativas <span class="pill">{{ state.iniciativas.length }}</span></h2>
+        <div class="list">
+          <div class="card" *ngFor="let init of state.iniciativas; let i = index">
+            <div class="row-3">
+              <div>
+                <label>ID</label>
+                <input [(ngModel)]="init.id" (input)="markDirty(); updateJson()" type="text" />
+              </div>
+              <div>
+                <label>Nombre</label>
+                <input [(ngModel)]="init.nombre" (input)="markDirty(); updateJson()" type="text" />
+              </div>
+              <div>
+                <label>Eje</label>
+                <input [(ngModel)]="init.eje" (input)="markDirty(); updateJson()" type="text" />
+              </div>
+            </div>
+
+            <div class="row-3">
+              <div>
+                <label>Tipo</label>
+                <input [(ngModel)]="init.tipo" (input)="markDirty(); updateJson()" type="text" />
+              </div>
+              <div>
+                <label>Expediente</label>
+                <input [(ngModel)]="init.expediente" (input)="markDirty(); updateJson()" type="text" />
+              </div>
+              <div>
+                <label>Certeza</label>
+                <select [(ngModel)]="init.certeza" (change)="markDirty(); updateJson()">
+                  <option value="">-</option>
+                  <option value="comprometido">comprometido</option>
+                  <option value="planificado">planificado</option>
+                  <option value="exploratorio">exploratorio</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row-3">
+              <div>
+                <label>Inicio</label>
+                <input [(ngModel)]="init.inicio" (input)="markDirty(); updateJson()" type="text" placeholder="2026-T1" />
+              </div>
+              <div>
+                <label>Fin</label>
+                <input [(ngModel)]="init.fin" (input)="markDirty(); updateJson()" type="text" placeholder="2026-T4" />
+              </div>
+              <div>
+                <label>Usuarios afectados</label>
+                <input [(ngModel)]="init.usuarios_afectados" (input)="markDirty(); updateJson()" type="text" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label>Objetivo</label>
+                <input [(ngModel)]="init.objetivo" (input)="markDirty(); updateJson()" type="text" />
+              </div>
+              <div>
+                <label>Impacto principal</label>
+                <input [(ngModel)]="init.impacto_principal" (input)="markDirty(); updateJson()" type="text" />
+              </div>
+            </div>
+
+            <div class="divider"></div>
+            <div>
+              <label>Dependencias</label>
+              <div class="deps">
+                <div class="deps-item" *ngFor="let dep of init.dependencias; let d = index">
+                  <div>
+                    <label>Iniciativa</label>
+                    <input [(ngModel)]="dep.iniciativa" (input)="markDirty(); updateJson()" type="text" />
+                  </div>
+                  <div>
+                    <label>Tipo</label>
+                    <input [(ngModel)]="dep.tipo" (input)="markDirty(); updateJson()" type="text" />
+                  </div>
+                  <div>
+                    <button class="danger" (click)="removeDependency(i, d)">Eliminar</button>
+                  </div>
+                </div>
+              </div>
+              <div class="toolbar" style="margin-top:8px;">
+                <button (click)="addDependency(i)">+ Dependencia</button>
+              </div>
+            </div>
+
+            <div class="toolbar" style="margin-top:10px;">
+              <button class="danger" (click)="removeInitiative(i)">Eliminar iniciativa</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <h2>Vista previa</h2>
+      <app-roadmap-timeline [data]="state" [allowLoad]="false"></app-roadmap-timeline>
+    </div>
+  </div>
+</div>
