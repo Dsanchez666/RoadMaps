@@ -5,7 +5,8 @@ import { RoadmapViewComponent } from './features/roadmaps/components/roadmap-vie
 import { RoadmapEditComponent } from './features/roadmaps/components/roadmap-edit/roadmap-edit.component';
 
 const routes: Routes = [
-  { path: '', component: HomeComponent },
+  { path: '', redirectTo: 'roadmaps', pathMatch: 'full' },
+  { path: 'roadmaps', component: HomeComponent },
   { path: 'roadmaps/:id/view', component: RoadmapViewComponent },
   { path: 'roadmaps/:id/edit', component: RoadmapEditComponent }
 ];
