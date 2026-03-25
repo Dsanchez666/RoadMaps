@@ -1,0 +1,61 @@
+.app-header {
+  align-items: center;
+  background: #0f2744;
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 16px;
+}
+
+.brand {
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.right {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.status {
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+}
+
+.status.connected {
+  background: #1e7f3f;
+}
+
+.status.disconnected {
+  background: #a22929;
+}
+
+button {
+  background: #20466f;
+  border: 1px solid #3e648c;
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  padding: 6px 10px;
+}
+
+button[disabled] {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.top-error {
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  margin: 8px 16px 0;
+  padding: 8px;
+}
+
+.page {
+  padding: 16px;
+}

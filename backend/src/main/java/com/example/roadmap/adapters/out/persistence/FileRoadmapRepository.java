@@ -11,10 +11,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * File-based implementation of {@link RoadmapRepository}.
+ *
+ * Data is stored in a plain text file using one roadmap per line. Fields are
+ * pipe-separated and escaped to support pipe/backslash inside values.
+ *
+ * @since 1.0
+ */
 public class FileRoadmapRepository implements RoadmapRepository {
     private final Path file;
     private final Object lock = new Object();
 
+    /**
+     * Initializes file storage and creates directories/file when missing.
+     */
     public FileRoadmapRepository() {
         this.file = Paths.get("..", "..", "data", "roadmaps.txt").toAbsolutePath().normalize();
         try {
@@ -25,6 +36,12 @@ public class FileRoadmapRepository implements RoadmapRepository {
         }
     }
 
+    /**
+     * Persists a roadmap by appending one encoded line to the file.
+     *
+     * @param roadmap Roadmap to store.
+     * @return Stored roadmap.
+     */
     @Override
     public Roadmap save(Roadmap roadmap) {
         String line = encode(roadmap.getId()) + "|" + encode(roadmap.getTitle()) + "|" + encode(roadmap.getDescription()) + "|" + roadmap.getCreatedAt().toString();
@@ -38,6 +55,12 @@ public class FileRoadmapRepository implements RoadmapRepository {
         return roadmap;
     }
 
+    /**
+     * Returns the first roadmap matching the provided id.
+     *
+     * @param id Roadmap identifier.
+     * @return Optional roadmap.
+     */
     @Override
     public Optional<Roadmap> findById(String id) {
         synchronized (lock) {
@@ -46,6 +69,11 @@ public class FileRoadmapRepository implements RoadmapRepository {
         }
     }
 
+    /**
+     * Returns all roadmaps from file storage.
+     *
+     * @return List of roadmaps.
+     */
     @Override
     public List<Roadmap> findAll() {
         synchronized (lock) {
@@ -53,6 +81,15 @@ public class FileRoadmapRepository implements RoadmapRepository {
         }
     }
 
+    /**
+     * Reads and decodes all lines from the storage file.
+     *
+     * Additional Details:
+     * Parsing is escape-aware; unescaped separators split columns while escaped
+     * separators are preserved inside values.
+     *
+     * @return List of deserialized roadmaps.
+     */
     private List<Roadmap> readAll() {
         List<Roadmap> out = new ArrayList<>();
         try {
@@ -75,20 +112,36 @@ public class FileRoadmapRepository implements RoadmapRepository {
         return out;
     }
 
-    // encode replaces backslash and pipe
+    /**
+     * Escapes field values before persistence.
+     *
+     * @param s Raw field value.
+     * @return Escaped value safe for pipe-separated serialization.
+     */
     private String encode(String s) {
         if (s == null) return "";
         return s.replace("\\", "\\\\").replace("|", "\\|");
     }
 
+    /**
+     * Restores escaped values after reading from storage.
+     *
+     * @param s Escaped value.
+     * @return Unescaped value.
+     */
     private String decode(String s) {
         if (s == null) return "";
-        // unescape: first replace escaped backslash, then escaped pipe
+        // The order matters: unescape backslash first, then pipe markers.
         String t = s.replace("\\\\", "\\");
         return t.replace("\\|", "|");
     }
 
-    // parse taking into account escaped pipes
+    /**
+     * Splits one serialized line into fields honoring escape sequences.
+     *
+     * @param line Serialized roadmap line.
+     * @return Parsed fields.
+     */
     private String[] parseLine(String line) {
         List<String> parts = new ArrayList<>();
         StringBuilder cur = new StringBuilder();

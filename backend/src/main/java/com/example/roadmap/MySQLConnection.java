@@ -3,14 +3,23 @@ package com.example.roadmap;
 import java.sql.Connection;
 
 /**
- * MySQL Connection wrapper for backward compatibility.
- * This class delegates to DatabaseConnection for flexibility.
- * Supports both MySQL and Oracle databases.
+ * Compatibility facade for legacy code that expects a MySQL-specific helper.
+ *
+ * Internally this class delegates to {@link DatabaseConnection} and keeps
+ * backward compatibility while the system supports multiple engines.
+ *
+ * @since 1.0
  */
 public class MySQLConnection {
 
     /**
-     * Set MySQL connection parameters
+     * Sets MySQL connection parameters and marks MySQL as active engine.
+     *
+     * @param host MySQL host.
+     * @param port MySQL port.
+     * @param database MySQL database name.
+     * @param user MySQL username.
+     * @param password MySQL password.
      */
     public static void setConnectionParams(String host, String port, String database, String user, String password) {
         DatabaseConnection.setMySQLParams(host, port, database, user, password);
@@ -18,7 +27,10 @@ public class MySQLConnection {
     }
 
     /**
-     * Connect to MySQL (default for backward compatibility)
+     * Connects to MySQL using current configuration.
+     *
+     * @return JDBC connection or null.
+     * @throws Exception Connection/driver errors.
      */
     public static Connection connect() throws Exception {
         DatabaseConnection.setDatabaseType("MYSQL");
@@ -26,12 +38,15 @@ public class MySQLConnection {
     }
 
     /**
-     * Connect to Oracle database instead of MySQL
-     * @param host Oracle server host
-     * @param port Oracle server port (default 1521)
-     * @param sid Oracle SID (e.g., ORCL)
-     * @param user Oracle username
-     * @param password Oracle password
+     * Connects to Oracle using SID parameters.
+     *
+     * @param host Oracle host.
+     * @param port Oracle port.
+     * @param sid Oracle SID.
+     * @param user Oracle username.
+     * @param password Oracle password.
+     * @return JDBC connection or null.
+     * @throws Exception Connection/driver errors.
      */
     public static Connection connectToOracle(String host, String port, String sid, String user, String password) throws Exception {
         DatabaseConnection.setOracleParams(host, port, sid, user, password);
@@ -39,20 +54,22 @@ public class MySQLConnection {
         return DatabaseConnection.connect();
     }
 
-    // ==================== Delegation Methods ====================
-    
+    /** @return Active JDBC connection. */
     public static Connection getConnection() {
         return DatabaseConnection.getConnection();
     }
 
+    /** Closes current database connection. */
     public static void disconnect() {
         DatabaseConnection.disconnect();
     }
 
+    /** @return true when the connection is active. */
     public static boolean isConnected() {
         return DatabaseConnection.isConnected();
     }
 
+    /** @return Current JDBC URL. */
     public static String getConnectionInfo() {
         return DatabaseConnection.getConnectionInfo();
     }

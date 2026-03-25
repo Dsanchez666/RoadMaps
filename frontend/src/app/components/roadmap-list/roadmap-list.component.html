@@ -1,9 +1,40 @@
-<div>
-  <h2>Lista</h2>
-  <div *ngIf="loading">Cargando...</div>
-  <ul>
-    <li *ngFor="let r of roadmaps">
-      <strong>{{r.title}}</strong><span *ngIf="r.description"> - {{r.description}}</span>
-    </li>
-  </ul>
+<section class="toolbar">
+  <h2>Roadmaps</h2>
+</section>
+
+<section class="actions-box">
+  <app-roadmap-create></app-roadmap-create>
+</section>
+
+<div *ngIf="connectionError" class="error">
+  {{ connectionError }}
+  <button (click)="reconnect()" [disabled]="reconnecting">
+    {{ reconnecting ? 'Reconectando...' : 'Reconectar' }}
+  </button>
+</div>
+
+<div *ngIf="loading" class="loading">Cargando...</div>
+
+<section class="search-row">
+  <input
+    type="text"
+    placeholder="Buscar por título o descripción"
+    [(ngModel)]="search"
+    (ngModelChange)="applyFilter()"
+  />
+</section>
+
+<section *ngIf="!loading && !connectionError" class="grid">
+  <article *ngFor="let r of filteredRoadmaps" class="card">
+    <h3>{{ r.title }}</h3>
+    <p>{{ r.description || 'Sin descripción' }}</p>
+    <div class="actions">
+      <button (click)="ver(r)">Ver</button>
+      <button (click)="editar(r)">Editar</button>
+    </div>
+  </article>
+</section>
+
+<div *ngIf="!loading && !connectionError && filteredRoadmaps.length === 0" class="loading">
+  No hay roadmaps para mostrar.
 </div>

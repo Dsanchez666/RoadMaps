@@ -1,3 +1,68 @@
-/* estilos simples */
-ul { list-style: none; padding-left: 0; }
-li { padding: 8px 0; border-bottom: 1px solid #eee; }
+.toolbar {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.actions-box {
+  background: #f8fafc;
+  border: 1px solid #dbe4ef;
+  border-radius: 10px;
+  margin-bottom: 14px;
+  padding: 10px;
+}
+
+.search-row {
+  margin-bottom: 12px;
+}
+
+.search-row input {
+  border: 1px solid #d4d4d8;
+  border-radius: 8px;
+  padding: 8px 10px;
+  width: 100%;
+}
+
+.error {
+  align-items: center;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 10px;
+}
+
+.loading {
+  color: #334155;
+  padding: 12px 0;
+}
+
+.grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.card h3 {
+  margin: 0 0 8px;
+}
+
+.card p {
+  color: #475569;
+  margin: 0 0 10px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}

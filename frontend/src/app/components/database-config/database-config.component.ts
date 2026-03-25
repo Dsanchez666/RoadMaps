@@ -1,6 +1,18 @@
 import { Component, OnInit } from '@angular/core';
-import { DatabaseService, MySQLConfig, OracleConfig, DatabaseStatus } from '../../services/database.service';
+import { Router } from '@angular/router';
 
+import { ConnectionStateService } from '../../services/connection-state.service';
+import { DatabaseStatus, MySQLConfig, OracleConfig } from '../../services/database.service';
+
+/**
+ * Component DatabaseConfigComponent
+ *
+ * Provides a runtime form to connect the backend to MySQL or Oracle and
+ * displays current connection status.
+ *
+ * @selector 'app-database-config'
+ * @styleUrls ['./database-config.component.scss']
+ */
 @Component({
   selector: 'app-database-config',
   standalone: false,
@@ -17,9 +29,9 @@ export class DatabaseConfigComponent implements OnInit {
   // MySQL config
   mysqlHost = 'localhost';
   mysqlPort = 3306;
-  mysqlUser = 'root';
+  mysqlUser = 'roadmap';
   mysqlPassword = '';
-  mysqlDatabase = 'roadmap';
+  mysqlDatabase = 'roadmap_mvp';
 
   // Oracle config
   oracleHost = 'localhost';
@@ -28,14 +40,23 @@ export class DatabaseConfigComponent implements OnInit {
   oraclePassword = '';
   oracleSid = 'ORCL';
 
-  constructor(private databaseService: DatabaseService) {}
+  constructor(
+    private readonly router: Router,
+    private readonly connectionState: ConnectionStateService
+  ) {}
 
+  /**
+   * Loads current connection status when component is initialized.
+   */
   ngOnInit(): void {
     this.checkStatus();
   }
 
+  /**
+   * Refreshes backend database status in the UI.
+   */
   checkStatus(): void {
-    this.databaseService.getStatus().subscribe({
+    this.connectionState.refreshStatus().subscribe({
       next: (status) => {
         this.status = status;
       },
@@ -45,6 +66,13 @@ export class DatabaseConfigComponent implements OnInit {
     });
   }
 
+  /**
+   * Connects to the selected database engine using form data.
+   *
+   * Additional Details:
+   * The method branches between MySQL and Oracle and updates UI feedback
+   * state (`connecting`, `message`, `status`) for both success and error paths.
+   */
   connect(): void {
     this.connecting = true;
     this.message = '';
@@ -57,12 +85,13 @@ export class DatabaseConfigComponent implements OnInit {
         password: this.mysqlPassword,
         database: this.mysqlDatabase
       };
-      this.databaseService.connectMySQL(config).subscribe({
+      this.connectionState.connectMySQL(config).subscribe({
         next: () => {
           this.messageType = 'success';
           this.message = 'Conexión a MySQL exitosa';
           this.checkStatus();
           this.connecting = false;
+          this.router.navigate(['/roadmaps']);
         },
         error: (err) => {
           this.messageType = 'error';
@@ -78,12 +107,13 @@ export class DatabaseConfigComponent implements OnInit {
         password: this.oraclePassword,
         sid: this.oracleSid
       };
-      this.databaseService.connectOracle(config).subscribe({
+      this.connectionState.connectOracle(config).subscribe({
         next: () => {
           this.messageType = 'success';
           this.message = 'Conexión a Oracle exitosa';
           this.checkStatus();
           this.connecting = false;
+          this.router.navigate(['/roadmaps']);
         },
         error: (err) => {
           this.messageType = 'error';
@@ -94,8 +124,11 @@ export class DatabaseConfigComponent implements OnInit {
     }
   }
 
+  /**
+   * Disconnects current database session and refreshes local state.
+   */
   disconnect(): void {
-    this.databaseService.disconnect().subscribe({
+    this.connectionState.disconnect().subscribe({
       next: () => {
         this.messageType = 'success';
         this.message = 'Desconectado';

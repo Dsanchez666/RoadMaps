@@ -6,19 +6,22 @@ import java.sql.SQLException;
 import java.util.Properties;
 
 /**
- * Universal database connection manager supporting MySQL and Oracle
- * Cleanly separates database-specific configuration
+ * Runtime database connection manager with support for MySQL and Oracle.
+ *
+ * This class centralizes database configuration and keeps a single active
+ * connection that can be switched between engines at runtime.
+ *
+ * @since 1.0
  */
 public class DatabaseConnection {
-    
-    // ==================== Enums ====================
+
+    /** Supported database engines. */
     enum DatabaseType {
         MYSQL, ORACLE
     }
-    
-    // ==================== Configuration Class ====================
+
     /**
-     * Encapsulates all connection parameters (common + specific)
+     * Connection configuration container for one database engine.
      */
     static class Config {
         DatabaseType type;
@@ -26,47 +29,48 @@ public class DatabaseConnection {
         String port;
         String user;
         String password;
-        String database;  // MySQL-specific
-        String sid;       // Oracle-specific
-        
+        String database;
+        String sid;
+
         Config(DatabaseType type) {
             this.type = type;
         }
-        
+
         @Override
         public String toString() {
-            return String.format("[%s] host=%s, port=%s, user=%s", 
+            return String.format("[%s] host=%s, port=%s, user=%s",
                 type, host, port, user);
         }
     }
-    
-    // ==================== Static State ====================
+
     private static Connection connection;
     private static DatabaseType currentType = DatabaseType.MYSQL;
-    
-    // Configuration for each database type
+
     private static final Config mysqlConfig = new Config(DatabaseType.MYSQL);
     private static final Config oracleConfig = new Config(DatabaseType.ORACLE);
-    
-    // Initialize defaults
+
     static {
-        // MySQL defaults
         mysqlConfig.host = "localhost";
         mysqlConfig.port = "3306";
         mysqlConfig.database = "roadmap_mvp";
         mysqlConfig.user = "root";
         mysqlConfig.password = "";
-        
-        // Oracle defaults
+
         oracleConfig.host = "localhost";
         oracleConfig.port = "1521";
         oracleConfig.sid = "ORCL";
         oracleConfig.user = "system";
-        oracleConfig.password = "oracle";
+        oracleConfig.password = "";
     }
 
     /**
-     * Set MySQL connection parameters
+     * Updates MySQL connection parameters.
+     *
+     * @param host MySQL host.
+     * @param port MySQL port.
+     * @param database MySQL database name.
+     * @param user MySQL username.
+     * @param password MySQL password.
      */
     public static void setMySQLParams(String host, String port, String database, String user, String password) {
         mysqlConfig.host = host;
@@ -77,12 +81,13 @@ public class DatabaseConnection {
     }
 
     /**
-     * Set Oracle connection parameters
-     * @param host Oracle server host
-     * @param port Oracle server port (default 1521)
-     * @param sid Oracle SID (e.g., ORCL)
-     * @param user Oracle username
-     * @param password Oracle password
+     * Updates Oracle connection parameters.
+     *
+     * @param host Oracle host.
+     * @param port Oracle listener port.
+     * @param sid Oracle SID.
+     * @param user Oracle username.
+     * @param password Oracle password.
      */
     public static void setOracleParams(String host, String port, String sid, String user, String password) {
         oracleConfig.host = host;
@@ -93,7 +98,9 @@ public class DatabaseConnection {
     }
 
     /**
-     * Set database type (MYSQL or ORACLE)
+     * Sets active database type.
+     *
+     * @param type Database type value (MYSQL or ORACLE).
      */
     public static void setDatabaseType(String type) {
         try {
@@ -105,11 +112,15 @@ public class DatabaseConnection {
     }
 
     /**
-     * Connect to the database based on configured type
+     * Opens a connection based on the currently selected database type.
+     *
+     * @return Active JDBC connection, or null when driver/connectivity is unavailable.
+     * @throws Exception Unexpected configuration/driver errors.
      */
     public static Connection connect() throws Exception {
         Config config = getCurrentConfig();
-        
+
+        // Routing rule: one entry point delegates to the engine-specific strategy.
         if (currentType == DatabaseType.ORACLE) {
             return connectToOracle(config);
         } else {
@@ -118,10 +129,13 @@ public class DatabaseConnection {
     }
 
     /**
-     * Connect to MySQL database
+     * Opens a MySQL JDBC connection.
+     *
+     * @param config Active MySQL configuration.
+     * @return JDBC connection or null when connection cannot be established.
+     * @throws Exception Driver lookup or JDBC errors.
      */
     private static Connection connectToMySQL(Config config) throws Exception {
-        // Check if MySQL driver is available
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
         } catch (ClassNotFoundException e) {
@@ -130,9 +144,9 @@ public class DatabaseConnection {
         }
 
         try {
-            String url = "jdbc:mysql://" + config.host + ":" + config.port + "/" + config.database + 
-                        "?useSSL=false&serverTimezone=UTC&useUnicode=true&characterEncoding=UTF-8";
-            
+            String url = "jdbc:mysql://" + config.host + ":" + config.port + "/" + config.database +
+                        "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&useUnicode=true&characterEncoding=UTF-8";
+
             Properties props = new Properties();
             props.setProperty("user", config.user);
             props.setProperty("password", config.password);
@@ -149,10 +163,13 @@ public class DatabaseConnection {
     }
 
     /**
-     * Connect to Oracle database
+     * Opens an Oracle JDBC connection using SID format.
+     *
+     * @param config Active Oracle configuration.
+     * @return JDBC connection or null when connection cannot be established.
+     * @throws Exception Driver lookup or JDBC errors.
      */
     private static Connection connectToOracle(Config config) throws Exception {
-        // Check if Oracle driver is available
         try {
             Class.forName("oracle.jdbc.driver.OracleDriver");
         } catch (ClassNotFoundException e) {
@@ -161,9 +178,8 @@ public class DatabaseConnection {
         }
 
         try {
-            // Using SID connection format
             String url = "jdbc:oracle:thin:@" + config.host + ":" + config.port + ":" + config.sid;
-            
+
             Properties props = new Properties();
             props.setProperty("user", config.user);
             props.setProperty("password", config.password);
@@ -177,19 +193,27 @@ public class DatabaseConnection {
         }
     }
 
-    // ==================== Helper Methods ====================
-    
     /**
-     * Get current configuration based on database type
+     * Returns configuration for the currently selected database type.
+     *
+     * @return Current connection config.
      */
     private static Config getCurrentConfig() {
         return (currentType == DatabaseType.ORACLE) ? oracleConfig : mysqlConfig;
     }
 
+    /**
+     * Returns current active JDBC connection reference.
+     *
+     * @return Connection instance or null.
+     */
     public static Connection getConnection() {
         return connection;
     }
 
+    /**
+     * Closes active connection if present.
+     */
     public static void disconnect() {
         if (connection != null) {
             try {
@@ -202,6 +226,11 @@ public class DatabaseConnection {
         }
     }
 
+    /**
+     * Checks if active connection is open.
+     *
+     * @return true when connection exists and is not closed.
+     */
     public static boolean isConnected() {
         if (connection == null) return false;
         try {
@@ -211,6 +240,11 @@ public class DatabaseConnection {
         }
     }
 
+    /**
+     * Returns JDBC URL for current configuration.
+     *
+     * @return Connection URL string.
+     */
     public static String getConnectionInfo() {
         Config config = getCurrentConfig();
         if (currentType == DatabaseType.ORACLE) {
@@ -220,6 +254,11 @@ public class DatabaseConnection {
         }
     }
 
+    /**
+     * Returns active database type name.
+     *
+     * @return MYSQL or ORACLE.
+     */
     public static String getDatabaseType() {
         return currentType.name();
     }

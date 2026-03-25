@@ -1,8 +1,14 @@
 import { Component } from '@angular/core';
 import { from } from 'rxjs';
 import { concatMap, finalize } from 'rxjs/operators';
-import { RoadmapService, Roadmap } from '../../services/roadmap.service';
 
+import { Roadmap, RoadmapImportPayload, RoadmapService } from '../../services/roadmap.service';
+
+/**
+ * Component RoadmapCreateComponent
+ *
+ * Handles manual creation and JSON import with explicit save/discard decision.
+ */
 @Component({
   selector: 'app-roadmap-create',
   standalone: false,
@@ -13,22 +19,34 @@ export class RoadmapCreateComponent {
   title = '';
   description = '';
   saving = false;
-  uploading = false;
-  uploadError = '';
-  uploaded = 0;
-  preview: any | null = null;
 
-  constructor(private service: RoadmapService) {}
+  importing = false;
+  importError = '';
+  importedCount = 0;
+  preview: RoadmapImportPayload | null = null;
+  pendingImports: RoadmapImportPayload[] = [];
 
-  save() {
-    if (!this.title) return;
+  constructor(private readonly service: RoadmapService) {}
+
+  /**
+   * Creates one roadmap from manual form data.
+   */
+  save(): void {
+    if (!this.title.trim()) {
+      return;
+    }
+
     this.saving = true;
-    const r: Roadmap = { title: this.title, description: this.description };
-    this.service.create(r).subscribe({
+    const payload: Roadmap = {
+      title: this.title.trim(),
+      description: this.description.trim()
+    };
+
+    this.service.create(payload).subscribe({
       next: () => {
+        this.saving = false;
         this.title = '';
         this.description = '';
-        this.saving = false;
         this.service.notifyRoadmapsChanged();
       },
       error: () => {
@@ -37,92 +55,135 @@ export class RoadmapCreateComponent {
     });
   }
 
-  onFileSelected(event: Event) {
+  /**
+   * Parses selected JSON and stores entries as pending (not persisted yet).
+   */
+  onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files && input.files[0];
-    if (!file) return;
+    if (!file) {
+      return;
+    }
 
-    this.uploadError = '';
-    this.uploaded = 0;
+    this.importError = '';
+    this.importedCount = 0;
+    this.preview = null;
+    this.pendingImports = [];
 
     const reader = new FileReader();
     reader.onload = () => {
       try {
         const raw = JSON.parse(String(reader.result || ''));
         const items = this.extractItems(raw);
-        if (!Array.isArray(items)) {
-          this.uploadError = 'Formato JSON no valido. Se esperaba un array o { roadmaps: [...] }.';
-          this.preview = null;
+        if (!items || items.length === 0) {
+          this.importError = 'No hay roadmaps válidos en el JSON.';
           return;
         }
-        this.preview = this.pickPreview(items);
 
         const unique = new Set<string>();
-        const roadmaps: Roadmap[] = items
-          .map((r: any) => ({
-            title: String(r?.title || '').trim(),
-            description: String(r?.description || '').trim()
-          }))
-          .filter((r: Roadmap) => {
-            if (r.title.length === 0) return false;
-            const key = `${r.title}::${r.description}`;
-            if (unique.has(key)) return false;
+        this.pendingImports = items
+          .map((item) => this.normalizeImportPayload(item))
+          .filter((item) => {
+            const key = `${item.title || item.producto || ''}::${item.description || ''}`;
+            if (!key.trim()) {
+              return false;
+            }
+            if (unique.has(key)) {
+              return false;
+            }
             unique.add(key);
             return true;
           });
 
-        if (roadmaps.length === 0) {
-          this.uploadError = 'No hay roadmaps validos para cargar.';
+        if (this.pendingImports.length === 0) {
+          this.importError = 'No hay roadmaps válidos en el JSON.';
           return;
         }
 
-        this.uploading = true;
-        from(roadmaps)
-          .pipe(
-            concatMap(r => this.service.create(r)),
-            finalize(() => {
-              this.uploading = false;
-              input.value = '';
-            })
-          )
-          .subscribe({
-            next: () => { this.uploaded += 1; },
-            error: () => { this.uploadError = 'Fallo la carga de roadmaps.'; },
-            complete: () => { this.service.notifyRoadmapsChanged(); }
-          });
+        this.preview = this.pendingImports[0];
       } catch {
-        this.uploadError = 'No se pudo leer el JSON.';
-        this.preview = null;
+        this.importError = 'No se pudo leer el JSON.';
+      } finally {
+        input.value = '';
       }
     };
-    reader.onerror = () => { this.uploadError = 'No se pudo leer el archivo.'; };
+    reader.onerror = () => {
+      this.importError = 'No se pudo leer el archivo.';
+      input.value = '';
+    };
     reader.readAsText(file);
   }
 
-  private extractItems(raw: any): any[] | null {
-    if (!Array.isArray(raw) && raw && typeof raw === 'object' && typeof raw.title === 'string') {
-      return [raw];
+  /**
+   * Persists all pending import items in backend storage.
+   */
+  guardarImportacion(): void {
+    if (this.pendingImports.length === 0) {
+      return;
+    }
+
+    this.importing = true;
+    this.importError = '';
+    this.importedCount = 0;
+
+    from(this.pendingImports)
+      .pipe(
+        concatMap((payload) => this.service.importRoadmap(payload)),
+        finalize(() => {
+          this.importing = false;
+        })
+      )
+      .subscribe({
+        next: () => {
+          this.importedCount += 1;
+        },
+        error: () => {
+          this.importError = 'Error importando roadmaps en base de datos.';
+        },
+        complete: () => {
+          this.pendingImports = [];
+          this.preview = null;
+          this.service.notifyRoadmapsChanged();
+        }
+      });
+  }
+
+  /**
+   * Discards pending import preview and refreshes list from backend.
+   */
+  descartarImportacion(): void {
+    this.pendingImports = [];
+    this.preview = null;
+    this.importError = '';
+    this.importedCount = 0;
+    this.service.notifyRoadmapsChanged();
+  }
+
+  private extractItems(raw: any): any[] {
+    if (Array.isArray(raw?.roadmaps)) {
+      return raw.roadmaps;
     }
     if (Array.isArray(raw)) {
       return raw;
     }
-    if (Array.isArray(raw?.roadmaps)) {
-      return raw.roadmaps;
+    if (raw && typeof raw === 'object') {
+      return [raw];
     }
-    return null;
+    return [];
   }
 
-  private pickPreview(items: any[]): any | null {
-    if (items.length === 0) return null;
-    return items
-      .filter((r: any) => r && typeof r === 'object')
-      .sort((a: any, b: any) => this.scoreRoadmap(b) - this.scoreRoadmap(a))[0] || null;
-  }
-
-  private scoreRoadmap(r: any): number {
-    const ejes = Array.isArray(r?.ejes_estrategicos) ? r.ejes_estrategicos.length : 0;
-    const iniciativas = Array.isArray(r?.iniciativas) ? r.iniciativas.length : 0;
-    const hasDescription = String(r?.description || '').trim().length > 0 ? 1 : 0;
-    return (ejes * 10) + (iniciativas * 10) + hasDescription;
+  private normalizeImportPayload(raw: any): RoadmapImportPayload {
+    return {
+      title: String(raw?.title || raw?.producto || '').trim(),
+      description: String(raw?.description || '').trim(),
+      producto: String(raw?.producto || raw?.title || '').trim(),
+      organizacion: String(raw?.organizacion || '').trim(),
+      horizonte_base: {
+        inicio: String(raw?.horizonte_base?.inicio || ''),
+        fin: String(raw?.horizonte_base?.fin || '')
+      },
+      ejes_estrategicos: Array.isArray(raw?.ejes_estrategicos) ? raw.ejes_estrategicos : [],
+      iniciativas: Array.isArray(raw?.iniciativas) ? raw.iniciativas : []
+    };
   }
 }

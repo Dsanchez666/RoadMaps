@@ -1,10 +1,11 @@
-<div class="database-config">
+<div class="database-shell">
+<form class="database-config" (ngSubmit)="connect()">
   <h2>Configuración de Base de Datos</h2>
   
   <!-- Database Type Selection -->
   <div class="type-selector">
     <label>Tipo de Base de Datos:</label>
-    <select [(ngModel)]="selectedType">
+    <select [(ngModel)]="selectedType" name="selectedType">
       <option value="mysql">MySQL</option>
       <option value="oracle">Oracle</option>
     </select>
@@ -15,23 +16,23 @@
     <h3>Configuración MySQL</h3>
     <div>
       <label>Host:</label>
-      <input [(ngModel)]="mysqlHost" type="text" />
+      <input [(ngModel)]="mysqlHost" name="mysqlHost" type="text" />
     </div>
     <div>
       <label>Puerto:</label>
-      <input [(ngModel)]="mysqlPort" type="number" />
+      <input [(ngModel)]="mysqlPort" name="mysqlPort" type="number" />
     </div>
     <div>
       <label>Usuario:</label>
-      <input [(ngModel)]="mysqlUser" type="text" />
+      <input [(ngModel)]="mysqlUser" name="mysqlUser" type="text" />
     </div>
     <div>
       <label>Contraseña:</label>
-      <input [(ngModel)]="mysqlPassword" type="password" />
+      <input [(ngModel)]="mysqlPassword" name="mysqlPassword" type="password" />
     </div>
     <div>
       <label>Base de Datos:</label>
-      <input [(ngModel)]="mysqlDatabase" type="text" />
+      <input [(ngModel)]="mysqlDatabase" name="mysqlDatabase" type="text" />
     </div>
   </div>
 
@@ -40,23 +41,23 @@
     <h3>Configuración Oracle</h3>
     <div>
       <label>Host:</label>
-      <input [(ngModel)]="oracleHost" type="text" />
+      <input [(ngModel)]="oracleHost" name="oracleHost" type="text" />
     </div>
     <div>
       <label>Puerto:</label>
-      <input [(ngModel)]="oraclePort" type="number" />
+      <input [(ngModel)]="oraclePort" name="oraclePort" type="number" />
     </div>
     <div>
       <label>Usuario:</label>
-      <input [(ngModel)]="oracleUser" type="text" />
+      <input [(ngModel)]="oracleUser" name="oracleUser" type="text" />
     </div>
     <div>
       <label>Contraseña:</label>
-      <input [(ngModel)]="oraclePassword" type="password" />
+      <input [(ngModel)]="oraclePassword" name="oraclePassword" type="password" />
     </div>
     <div>
       <label>SID:</label>
-      <input [(ngModel)]="oracleSid" type="text" />
+      <input [(ngModel)]="oracleSid" name="oracleSid" type="text" />
     </div>
   </div>
 
@@ -73,9 +74,10 @@
 
   <!-- Action Buttons -->
   <div class="buttons">
-    <button (click)="connect()" [disabled]="connecting">
+    <button type="submit" [disabled]="connecting">
       {{ connecting ? 'Conectando...' : 'Conectar' }}
     </button>
-    <button (click)="disconnect()" *ngIf="status?.connected">Desconectar</button>
+    <button type="button" (click)="disconnect()" *ngIf="status?.connected">Desconectar</button>
   </div>
+</form>
 </div>

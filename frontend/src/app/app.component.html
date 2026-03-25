@@ -1,0 +1,28 @@
+<header class="app-header">
+  <div class="left">
+    <a routerLink="/roadmaps" class="brand">Roadmaps</a>
+  </div>
+
+  <div class="right">
+    <span
+      class="status"
+      [class.connected]="status?.connected"
+      [class.disconnected]="!status?.connected"
+      [title]="status?.connectionUrl || ''"
+    >
+      {{ status?.connected ? 'Conectado' : 'Desconectado' }}
+    </span>
+
+    <button *ngIf="!status?.connected && !isDatabaseRoute()" (click)="reconnect()" [disabled]="reconnecting">
+      {{ reconnecting ? 'Reconectando...' : 'Reconectar' }}
+    </button>
+
+    <button *ngIf="!isDatabaseRoute()" (click)="salir()">Salir</button>
+  </div>
+</header>
+
+<div *ngIf="reconnectError" class="top-error">{{ reconnectError }}</div>
+
+<main class="page">
+  <router-outlet></router-outlet>
+</main>

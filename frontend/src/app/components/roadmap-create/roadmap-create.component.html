@@ -1,49 +1,38 @@
-<div>
-  <h2>Crear Roadmap</h2>
-  <div>
-    <label>Titulo</label><br>
-    <input [(ngModel)]="title" />
+<section class="block">
+  <h3>Crear Roadmap</h3>
+  <div class="row">
+    <label for="title">Título</label>
+    <input id="title" [(ngModel)]="title" />
   </div>
-  <div>
-    <label>Descripcion</label><br>
-    <textarea [(ngModel)]="description"></textarea>
+  <div class="row">
+    <label for="description">Descripción</label>
+    <textarea id="description" [(ngModel)]="description"></textarea>
   </div>
-  <button (click)="save()" [disabled]="saving">Crear</button>
-</div>
-<div>
-  <h2>Cargar desde JSON</h2>
-  <input type="file" accept=".json,application/json" (change)="onFileSelected($event)" [disabled]="uploading" />
-  <div *ngIf="uploadError">{{ uploadError }}</div>
-  <div *ngIf="uploaded > 0">Cargados: {{ uploaded }}</div>
+  <button (click)="save()" [disabled]="saving">{{ saving ? 'Creando...' : 'Crear' }}</button>
+</section>
 
-  <div *ngIf="preview">
-    <h3>Roadmap del JSON</h3>
-    <div><strong>Titulo:</strong> {{ preview.title || '(sin titulo)' }}</div>
-    <div *ngIf="preview.description"><strong>Descripcion:</strong> {{ preview.description }}</div>
+<section class="block">
+  <h3>Cargar desde JSON</h3>
+  <input type="file" accept=".json,application/json" (change)="onFileSelected($event)" [disabled]="importing" />
+
+  <div *ngIf="importError" class="error">{{ importError }}</div>
+  <div *ngIf="importedCount > 0" class="success">Importados: {{ importedCount }}</div>
+
+  <div *ngIf="preview" class="preview">
+    <div><strong>Título:</strong> {{ preview.title || '(sin título)' }}</div>
     <div *ngIf="preview.producto"><strong>Producto:</strong> {{ preview.producto }}</div>
-    <div *ngIf="preview.organizacion"><strong>Organizacion:</strong> {{ preview.organizacion }}</div>
-    <div *ngIf="preview.horizonte_base?.inicio || preview.horizonte_base?.fin">
-      <strong>Horizonte:</strong> {{ preview.horizonte_base?.inicio || '?' }} a {{ preview.horizonte_base?.fin || '?' }}
+    <div *ngIf="preview.organizacion"><strong>Organización:</strong> {{ preview.organizacion }}</div>
+    <div>
+      <strong>Ejes:</strong> {{ preview.ejes_estrategicos?.length || 0 }}
+      | <strong>Iniciativas:</strong> {{ preview.iniciativas?.length || 0 }}
     </div>
-    <div><strong>Ejes:</strong> {{ preview.ejes_estrategicos?.length || 0 }}</div>
-    <div><strong>Iniciativas:</strong> {{ preview.iniciativas?.length || 0 }}</div>
+    <div><strong>Pendientes:</strong> {{ pendingImports.length }}</div>
 
-    <div *ngIf="preview.ejes_estrategicos?.length">
-      <strong>Detalle ejes:</strong>
-      <ul>
-        <li *ngFor="let eje of preview.ejes_estrategicos">
-          {{ eje.nombre || eje.id || 'Eje' }}
-        </li>
-      </ul>
-    </div>
-
-    <div *ngIf="preview.iniciativas?.length">
-      <strong>Detalle iniciativas:</strong>
-      <ul>
-        <li *ngFor="let ini of preview.iniciativas">
-          {{ ini.nombre || ini.id || 'Iniciativa' }}
-        </li>
-      </ul>
+    <div class="actions">
+      <button (click)="guardarImportacion()" [disabled]="importing">
+        {{ importing ? 'Guardando...' : 'Guardar' }}
+      </button>
+      <button class="secondary" (click)="descartarImportacion()" [disabled]="importing">Descartar</button>
     </div>
   </div>
-</div>
+</section>
