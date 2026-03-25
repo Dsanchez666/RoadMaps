@@ -1,0 +1,27 @@
+<div class="app-shell">
+  <header class="connection-bar">
+    <div class="left">
+      <div class="header-actions" *ngIf="headerActions.length">
+        <a *ngFor="let action of headerActions"
+           class="header-button"
+           [class.primary]="action.variant === 'primary'"
+           [routerLink]="action.route">
+          {{ action.label }}
+        </a>
+      </div>
+    </div>
+
+    <div class="right">
+      <div class="status" [class.connected]="connected" [class.disconnected]="!connected">
+        <span class="dot"></span>
+        <span class="label">{{ connected ? 'Conectado' : 'Sin conexión' }}</span>
+      </div>
+      <button *ngIf="!connected" class="header-button" (click)="reconnect()">Reconectar</button>
+      <button class="header-button" (click)="disconnect()">Salir</button>
+    </div>
+  </header>
+  <div *ngIf="reconnectMessage" class="reconnect-message">{{ reconnectMessage }}</div>
+  <main class="content">
+    <router-outlet></router-outlet>
+  </main>
+</div>

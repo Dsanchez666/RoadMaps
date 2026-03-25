@@ -1,0 +1,93 @@
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f7f7f7;
+}
+
+.connection-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #e3e3e3;
+  gap: 16px;
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-button {
+  border: 1px solid #c4c4c4;
+  background: #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #222;
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.header-button.primary {
+  background: #1f5eff;
+  border-color: #1f5eff;
+  color: #fff;
+}
+
+.header-button:hover {
+  border-color: #9a9a9a;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.status .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  display: inline-block;
+  background: #9aa0a6;
+}
+
+.status.connected .dot {
+  background: #1b8c3f;
+}
+
+.status.disconnected .dot {
+  background: #d0342c;
+}
+
+.content {
+  flex: 1;
+}
+.reconnect-message {
+  margin: 8px 16px 0;
+  padding: 8px 12px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+  border-radius: 8px;
+  font-size: 12px;
+}

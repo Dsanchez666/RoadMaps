@@ -1,10 +1,12 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { RoadmapService } from '../../services/roadmap.service';
 import { Roadmap } from '../../../../shared/models/roadmap.model';
 import { RoadmapConfig } from '../../../../shared/models/roadmap-config.model';
+import { HeaderActionsService } from '../../../../shared/services/header-actions.service';
+import { DatabaseService } from '../../../database/services/database.service';
 
 @Component({
   selector: 'app-roadmap-view',
@@ -16,35 +18,47 @@ export class RoadmapViewComponent implements OnInit, OnDestroy {
   roadmap: Roadmap | null = null;
   loading = true;
   config: RoadmapConfig | null = null;
+  screenError = '';
+  private currentId = '';
   private readonly destroy$ = new Subject<void>();
 
   constructor(
     private route: ActivatedRoute,
-    private router: Router,
-    private service: RoadmapService
+    private service: RoadmapService,
+    private headerActions: HeaderActionsService,
+    private databaseService: DatabaseService
   ) {}
 
   ngOnInit(): void {
+    this.databaseService.status$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((status) => {
+        if (status?.connected && this.currentId && this.screenError) {
+          this.loadRoadmap(this.currentId);
+        }
+      });
+
     this.route.paramMap
       .pipe(takeUntil(this.destroy$))
       .subscribe(params => {
         const id = params.get('id');
+        this.screenError = '';
+        this.loading = true;
+
         if (!id) {
-          this.router.navigateByUrl('/');
+          this.loading = false;
+          this.screenError = 'No se recibio el identificador del roadmap.';
           return;
         }
-        this.loading = true;
-        this.service.get(id).subscribe({
-          next: (r) => {
-            this.roadmap = r;
-            this.loadConfig(id);
-          },
-          error: () => { this.roadmap = null; this.loading = false; }
-        });
+
+        this.currentId = id;
+        this.setHeaderActions(id);
+        this.loadRoadmap(id);
       });
   }
 
   ngOnDestroy(): void {
+    this.headerActions.clear();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -53,6 +67,30 @@ export class RoadmapViewComponent implements OnInit, OnDestroy {
     if (!this.roadmap) return;
     this.saveConfig(this.roadmap.id as string, cfg);
     this.config = cfg;
+  }
+
+  private setHeaderActions(id: string) {
+    this.headerActions.setActions([
+      { label: 'Volver', route: '/roadmaps' },
+      { label: 'Editar', route: ['/roadmaps', id, 'edit'], variant: 'primary' }
+    ]);
+  }
+
+  private loadRoadmap(id: string): void {
+    this.loading = true;
+    this.screenError = '';
+
+    this.service.get(id).subscribe({
+      next: (r) => {
+        this.roadmap = r;
+        this.loadConfig(id);
+      },
+      error: (err) => {
+        this.roadmap = null;
+        this.loading = false;
+        this.screenError = err?.error?.message || 'No se pudo cargar el roadmap (conexion o servidor).';
+      }
+    });
   }
 
   private loadConfig(id: string) {
@@ -68,9 +106,10 @@ export class RoadmapViewComponent implements OnInit, OnDestroy {
         this.saveConfig(id, cfg);
         this.loading = false;
       },
-      error: () => {
+      error: (err) => {
         this.config = null;
         this.loading = false;
+        this.screenError = err?.error?.message || 'No se pudo cargar la configuracion del roadmap.';
       }
     });
   }

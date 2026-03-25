@@ -1,10 +1,12 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { RoadmapService } from '../../services/roadmap.service';
 import { Roadmap } from '../../../../shared/models/roadmap.model';
-import { RoadmapConfig, Axis, Initiative, InitiativeDependency } from '../../../../shared/models/roadmap-config.model';
+import { Axis, Initiative, InitiativeDependency, RoadmapConfig } from '../../../../shared/models/roadmap-config.model';
+import { HeaderActionsService } from '../../../../shared/services/header-actions.service';
+import { DatabaseService } from '../../../database/services/database.service';
 
 @Component({
   selector: 'app-roadmap-edit',
@@ -15,64 +17,99 @@ import { RoadmapConfig, Axis, Initiative, InitiativeDependency } from '../../../
 export class RoadmapEditComponent implements OnInit, OnDestroy {
   roadmap: Roadmap | null = null;
   loading = true;
-  state: RoadmapConfig = this.emptyState();
-  jsonOutput = '';
-  isDirty = false;
-  savedState: RoadmapConfig | null = null;
-  currentJsonName = 'roadmap_etna.json';
+  config: RoadmapConfig | null = null;
+  message = '';
+  messageType: 'success' | 'error' | '' = '';
+  preview = true;
+  screenError = '';
+  private currentId = '';
   private readonly destroy$ = new Subject<void>();
 
   constructor(
     private route: ActivatedRoute,
-    private router: Router,
-    private service: RoadmapService
+    private service: RoadmapService,
+    private headerActions: HeaderActionsService,
+    private databaseService: DatabaseService
   ) {}
 
   ngOnInit(): void {
+    this.databaseService.status$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((status) => {
+        if (status?.connected && this.currentId && this.screenError) {
+          this.loadRoadmap(this.currentId);
+        }
+      });
+
     this.route.paramMap
       .pipe(takeUntil(this.destroy$))
       .subscribe(params => {
         const id = params.get('id');
+        this.screenError = '';
+        this.loading = true;
+
         if (!id) {
-          this.router.navigateByUrl('/');
+          this.loading = false;
+          this.screenError = 'No se recibio el identificador del roadmap.';
           return;
         }
-        this.loading = true;
-        this.service.get(id).subscribe({
-          next: (r) => {
-            this.roadmap = r;
-            this.loadConfig(id, r.title || '');
-          },
-          error: () => { this.roadmap = null; this.loading = false; }
-        });
+
+        this.currentId = id;
+        this.setHeaderActions(id);
+        this.loadRoadmap(id);
       });
   }
 
   ngOnDestroy(): void {
+    this.headerActions.clear();
     this.destroy$.next();
     this.destroy$.complete();
   }
 
-  onBaseChange() {
-    this.markDirty();
-    this.updateJson();
+  private setHeaderActions(id: string) {
+    this.headerActions.setActions([
+      { label: 'Volver', route: '/roadmaps' },
+      { label: 'Ver', route: ['/roadmaps', id, 'view'], variant: 'primary' }
+    ]);
+  }
+
+  onTogglePreview() {
+    this.preview = !this.preview;
+  }
+
+  onSave() {
+    if (!this.config || !this.roadmap) return;
+    this.saveConfig(this.roadmap.id as string, this.config);
+    this.messageType = 'success';
+    this.message = 'Configuracion guardada en el navegador';
+  }
+
+  onDiscard() {
+    if (!this.roadmap) return;
+    this.loadConfig(this.roadmap.id as string);
+    this.messageType = 'success';
+    this.message = 'Cambios descartados';
   }
 
   addAxis() {
-    this.state.ejes_estrategicos.push({ id: '', nombre: '', descripcion: '', color: '' } as Axis);
-    this.markDirty();
-    this.updateJson();
+    if (!this.config) return;
+    const axis: Axis = {
+      id: '',
+      nombre: '',
+      descripcion: '',
+      color: '#1976D2'
+    };
+    this.config.ejes_estrategicos.push(axis);
   }
 
   removeAxis(index: number) {
-    this.state.ejes_estrategicos.splice(index, 1);
-    this.reconcileInitiativeAxes(true);
-    this.markDirty();
-    this.updateJson();
+    if (!this.config) return;
+    this.config.ejes_estrategicos.splice(index, 1);
   }
 
   addInitiative() {
-    this.state.iniciativas.push({
+    if (!this.config) return;
+    const initiative: Initiative = {
       id: '',
       nombre: '',
       eje: '',
@@ -85,164 +122,68 @@ export class RoadmapEditComponent implements OnInit, OnDestroy {
       usuarios_afectados: '',
       dependencias: [],
       certeza: ''
-    } as Initiative);
-    this.markDirty();
-    this.updateJson();
+    };
+    this.config.iniciativas.push(initiative);
   }
 
   removeInitiative(index: number) {
-    this.state.iniciativas.splice(index, 1);
-    this.markDirty();
-    this.updateJson();
+    if (!this.config) return;
+    this.config.iniciativas.splice(index, 1);
   }
 
-  addDependency(initIndex: number) {
-    const deps = this.state.iniciativas[initIndex].dependencias || [];
-    deps.push({ iniciativa: '', tipo: '' } as InitiativeDependency);
-    this.state.iniciativas[initIndex].dependencias = deps;
-    this.markDirty();
-    this.updateJson();
+  addDependency(initiative: Initiative) {
+    const dep: InitiativeDependency = { iniciativa: '', tipo: '' };
+    initiative.dependencias = initiative.dependencias || [];
+    initiative.dependencias.push(dep);
   }
 
-  removeDependency(initIndex: number, depIndex: number) {
-    this.state.iniciativas[initIndex].dependencias.splice(depIndex, 1);
-    this.markDirty();
-    this.updateJson();
+  removeDependency(initiative: Initiative, index: number) {
+    initiative.dependencias.splice(index, 1);
   }
 
-  loadJson(file?: File | null) {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const parsed = JSON.parse(String(reader.result || '{}')) as RoadmapConfig;
-        this.state = parsed;
-        this.currentJsonName = file.name || 'roadmap_etna.json';
-        this.savedState = JSON.parse(JSON.stringify(this.state));
-        this.isDirty = false;
-        this.updateJson();
-      } catch {
-        alert('JSON no valido.');
-      }
-    };
-    reader.readAsText(file);
-  }
+  private loadRoadmap(id: string): void {
+    this.loading = true;
+    this.screenError = '';
 
-  saveChanges() {
-    if (!this.roadmap) return;
-    this.reconcileInitiativeAxes(true);
-    this.savedState = JSON.parse(JSON.stringify(this.state));
-    this.updateJson();
-    this.saveConfig(this.roadmap.id as string, this.state);
-    this.downloadJson();
-    this.isDirty = false;
-  }
-
-  discardChanges() {
-    if (!this.savedState) return;
-    this.state = JSON.parse(JSON.stringify(this.savedState));
-    this.updateJson();
-    this.isDirty = false;
-  }
-
-  downloadJson() {
-    const blob = new Blob([this.jsonOutput], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = this.currentJsonName || 'roadmap_etna.json';
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      URL.revokeObjectURL(url);
-      a.remove();
-    }, 0);
-  }
-
-  markDirty() {
-    this.isDirty = true;
-  }
-
-  updateJson() {
-    this.jsonOutput = JSON.stringify(this.state, null, 2);
-  }
-
-  normalizeAxisId(value: string): string {
-    if (!value) return '';
-    let v = String(value).toUpperCase().trim();
-    v = v.replace(/[^A-Z0-9]/g, '');
-    if (v.startsWith('EJE')) {
-      v = 'E' + v.slice(3);
-    }
-    return v;
-  }
-
-  reconcileInitiativeAxes(notify: boolean) {
-    const axisMap = new Map<string, string>();
-    this.state.ejes_estrategicos.forEach(a => {
-      const norm = this.normalizeAxisId(a.id);
-      if (norm) axisMap.set(norm, a.id);
-    });
-
-    let fixed = 0;
-    let cleared = 0;
-
-    this.state.iniciativas.forEach(init => {
-      if (!init.eje) return;
-      if (this.state.ejes_estrategicos.some(a => a.id === init.eje)) return;
-      const norm = this.normalizeAxisId(init.eje);
-      if (axisMap.has(norm)) {
-        init.eje = axisMap.get(norm) as string;
-        fixed += 1;
-      } else {
-        init.eje = '';
-        cleared += 1;
+    this.service.get(id).subscribe({
+      next: (r) => {
+        this.roadmap = r;
+        this.loadConfig(id);
+      },
+      error: (err) => {
+        this.roadmap = null;
+        this.loading = false;
+        this.screenError = err?.error?.message || 'No se pudo cargar el roadmap (conexion o servidor).';
       }
     });
-
-    if (notify && (fixed || cleared)) {
-      let msg = 'Se han actualizado referencias de ejes en iniciativas.';
-      if (cleared) {
-        msg += ' Algunas iniciativas quedaron sin eje porque el eje ya no existe.';
-      }
-      alert(msg);
-    }
   }
 
-  private loadConfig(id: string, title: string) {
+  private loadConfig(id: string) {
     const stored = this.loadLocalConfig(id);
     if (stored) {
-      this.state = stored;
-      this.savedState = JSON.parse(JSON.stringify(this.state));
-      this.updateJson();
-      this.isDirty = false;
+      this.config = this.ensureConfigDefaults(JSON.parse(JSON.stringify(stored)));
       this.loading = false;
       return;
     }
-
     this.service.getConfig(id).subscribe({
       next: (cfg) => {
-        this.state = cfg;
-        this.savedState = JSON.parse(JSON.stringify(this.state));
-        this.updateJson();
-        this.isDirty = false;
+        this.config = this.ensureConfigDefaults(JSON.parse(JSON.stringify(cfg)));
         this.saveConfig(id, cfg);
         this.loading = false;
       },
-      error: () => {
-        this.state = this.emptyState(title);
-        this.savedState = JSON.parse(JSON.stringify(this.state));
-        this.updateJson();
-        this.isDirty = false;
+      error: (err) => {
+        this.config = null;
         this.loading = false;
+        this.screenError = err?.error?.message || 'No se pudo cargar la configuracion del roadmap.';
       }
     });
   }
 
   private loadLocalConfig(id: string): RoadmapConfig | null {
     const raw = localStorage.getItem(this.storageKey(id));
-    if (!raw) return null;
+    if (!raw) {
+      return null;
+    }
     try {
       const cfg = JSON.parse(raw) as RoadmapConfig;
       if (cfg && cfg.ejes_estrategicos && cfg.ejes_estrategicos.length) {
@@ -262,13 +203,15 @@ export class RoadmapEditComponent implements OnInit, OnDestroy {
     return `roadmap_config_${id}`;
   }
 
-  private emptyState(title?: string): RoadmapConfig {
-    return {
-      producto: title || '',
-      organizacion: '',
-      horizonte_base: { inicio: '', fin: '' },
-      ejes_estrategicos: [],
-      iniciativas: []
-    };
+  private ensureConfigDefaults(cfg: RoadmapConfig): RoadmapConfig {
+    if (!cfg.horizonte_base) {
+      cfg.horizonte_base = { inicio: '', fin: '' };
+    }
+    cfg.ejes_estrategicos = cfg.ejes_estrategicos || [];
+    cfg.iniciativas = cfg.iniciativas || [];
+    cfg.iniciativas.forEach((initiative) => {
+      initiative.dependencias = initiative.dependencias || [];
+    });
+    return cfg;
   }
 }
