@@ -3,6 +3,23 @@
 ## Overview
 The application now supports both **MySQL** and **Oracle** databases using JDBC. You can switch between them dynamically by configuring the appropriate connection parameters.
 
+## Initiative Dynamic Additional Data (MySQL)
+
+Roadmap initiatives now persist dynamic key/value metadata in:
+
+- Table: `iniciativas`
+- Column: `informacion_adicional` (`JSON`)
+
+### Required Migration (existing MySQL databases)
+
+Before connecting the backend to an existing database, run:
+
+```sql
+SOURCE Database/migrations/2026-03-25_iniciativas_informacion_adicional.sql;
+```
+
+If this migration is not applied, `/api/database/connect/mysql` returns error and blocks the connection with an explicit schema message.
+
 ## MySQL Connection
 
 ### Default Configuration

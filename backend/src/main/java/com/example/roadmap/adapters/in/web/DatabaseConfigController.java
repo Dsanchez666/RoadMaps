@@ -12,27 +12,29 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.roadmap.DatabaseConnection;
+import com.example.roadmap.adapters.out.persistence.MySqlSchemaInitializer;
 
 /**
- * REST Controller to manage database connections dynamically.
- * Allows switching between MySQL and Oracle database at runtime.
+ * REST controller used to configure and inspect runtime database connectivity.
+ *
+ * It exposes connection endpoints for MySQL and Oracle and provides current
+ * status to the frontend.
+ *
+ * @since 1.0
  */
 @RestController
 @RequestMapping("/api/database")
 public class DatabaseConfigController {
 
     /**
-     * Connect to MySQL database
-     * 
-     * Example:
-     * POST /api/database/connect/mysql
-     * {
-     *     "host": "localhost",
-     *     "port": "3306",
-     *     "database": "roadmap_mvp",
-     *     "user": "root",
-     *     "password": ""
-     * }
+     * Connects the backend to a MySQL instance.
+     *
+     * @param host MySQL host.
+     * @param port MySQL port.
+     * @param database MySQL database name.
+     * @param user MySQL username.
+     * @param password MySQL password.
+     * @return ResponseEntity<Map<String, Object>> with operation outcome.
      */
     @PostMapping("/connect/mysql")
     public ResponseEntity<Map<String, Object>> connectMySQL(
@@ -41,15 +43,24 @@ public class DatabaseConfigController {
             @RequestParam(defaultValue = "roadmap_mvp") String database,
             @RequestParam(defaultValue = "root") String user,
             @RequestParam(defaultValue = "") String password) {
-        
+
         try {
             DatabaseConnection.setMySQLParams(host, port, database, user, password);
             DatabaseConnection.setDatabaseType("MYSQL");
-            
+
             Connection conn = DatabaseConnection.connect();
-            
+
             Map<String, Object> response = new HashMap<>();
             if (conn != null && DatabaseConnection.isConnected()) {
+                String schemaWarning = MySqlSchemaInitializer.ensureSchema(conn);
+                if (schemaWarning != null) {
+                    DatabaseConnection.disconnect();
+                    response.put("status", "FAILED");
+                    response.put("message", schemaWarning);
+                    response.put("type", "MYSQL");
+                    return ResponseEntity.status(500).body(response);
+                }
+
                 response.put("status", "SUCCESS");
                 response.put("message", "Successfully connected to MySQL database");
                 response.put("type", "MYSQL");
@@ -74,17 +85,14 @@ public class DatabaseConfigController {
     }
 
     /**
-     * Connect to Oracle database
-     * 
-     * Example:
-     * POST /api/database/connect/oracle
-     * {
-     *     "host": "oracle-server.company.com",
-     *     "port": "1521",
-     *     "sid": "ORCL",
-     *     "user": "system",
-     *     "password": "oracle"
-     * }
+     * Connects the backend to an Oracle instance.
+     *
+     * @param host Oracle host.
+     * @param port Oracle listener port.
+     * @param sid Oracle SID.
+     * @param user Oracle username.
+     * @param password Oracle password.
+     * @return ResponseEntity<Map<String, Object>> with operation outcome.
      */
     @PostMapping("/connect/oracle")
     public ResponseEntity<Map<String, Object>> connectOracle(
@@ -93,13 +101,13 @@ public class DatabaseConfigController {
             @RequestParam String sid,
             @RequestParam String user,
             @RequestParam String password) {
-        
+
         try {
             DatabaseConnection.setOracleParams(host, port, sid, user, password);
             DatabaseConnection.setDatabaseType("ORACLE");
-            
+
             Connection conn = DatabaseConnection.connect();
-            
+
             Map<String, Object> response = new HashMap<>();
             if (conn != null && DatabaseConnection.isConnected()) {
                 response.put("status", "SUCCESS");
@@ -126,17 +134,9 @@ public class DatabaseConfigController {
     }
 
     /**
-     * Get current connection status
-     * 
-     * Example:
-     * GET /api/database/status
-     * 
-     * Response:
-     * {
-     *     "connected": true,
-     *     "type": "ORACLE",
-     *     "connectionUrl": "jdbc:oracle:thin:@oracle-server:1521:ORCL"
-     * }
+     * Returns current database connection status.
+     *
+     * @return ResponseEntity<Map<String, Object>> containing state and connection info.
      */
     @GetMapping("/status")
     public ResponseEntity<Map<String, Object>> getStatus() {
@@ -148,16 +148,15 @@ public class DatabaseConfigController {
     }
 
     /**
-     * Disconnect from current database
-     * 
-     * Example:
-     * POST /api/database/disconnect
+     * Disconnects from the currently active database.
+     *
+     * @return ResponseEntity<Map<String, Object>> with disconnection result.
      */
     @PostMapping("/disconnect")
     public ResponseEntity<Map<String, Object>> disconnect() {
         try {
             DatabaseConnection.disconnect();
-            
+
             Map<String, Object> response = new HashMap<>();
             response.put("status", "SUCCESS");
             response.put("message", "Successfully disconnected from database");
@@ -172,27 +171,26 @@ public class DatabaseConfigController {
     }
 
     /**
-     * Get supported database types
-     * 
-     * Example:
-     * GET /api/database/supported-types
+     * Returns metadata about supported database engines.
+     *
+     * @return ResponseEntity<Map<String, Object>> with MySQL/Oracle capabilities.
      */
     @GetMapping("/supported-types")
     public ResponseEntity<Map<String, Object>> getSupportedTypes() {
         Map<String, Object> response = new HashMap<>();
         response.put("types", new String[]{"MYSQL", "ORACLE"});
         response.put("description", "The application supports both MySQL and Oracle databases");
-        
+
         Map<String, Object> mysqlInfo = new HashMap<>();
         mysqlInfo.put("name", "MySQL");
         mysqlInfo.put("defaultPort", "3306");
         mysqlInfo.put("requiredParams", new String[]{"host", "port", "database", "user", "password"});
-        
+
         Map<String, Object> oracleInfo = new HashMap<>();
         oracleInfo.put("name", "Oracle");
         oracleInfo.put("defaultPort", "1521");
         oracleInfo.put("requiredParams", new String[]{"host", "port", "sid", "user", "password"});
-        
+
         response.put("mysql", mysqlInfo);
         response.put("oracle", oracleInfo);
         return ResponseEntity.ok(response);

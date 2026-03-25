@@ -16,6 +16,13 @@ mvn clean install
 mvn spring-boot:run
 ```
 
+### Migracion MySQL requerida (iniciativas dinamicas)
+Para BBDD existentes, ejecuta antes:
+```bash
+mysql -u roadmap -p roadmap_mvp < Database/migrations/2026-03-25_iniciativas_informacion_adicional.sql
+```
+La conexion MySQL falla de forma controlada si no existe `iniciativas.informacion_adicional`.
+
 ### Frontend Angular (puerto 4200)
 ```bash
 cd roadmap-mvp-project/frontend

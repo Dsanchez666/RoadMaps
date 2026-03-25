@@ -1,0 +1,150 @@
+<section class="header">
+  <button (click)="volver()">Volver</button>
+  <h2>Editar Roadmap</h2>
+  <button (click)="guardar()" [disabled]="saving || loading">{{ saving ? 'Guardando...' : 'Guardar' }}</button>
+</section>
+
+<div *ngIf="error" class="error">
+  {{ error }}
+  <button (click)="reconnect()" [disabled]="reconnecting">
+    {{ reconnecting ? 'Reconectando...' : 'Reconectar' }}
+  </button>
+</div>
+<div *ngIf="success" class="success">{{ success }}</div>
+<div *ngIf="loading">Cargando...</div>
+
+<ng-container *ngIf="!loading && config">
+  <section class="panel">
+    <h3>Datos base</h3>
+    <div class="row two-cols">
+      <label>
+        Producto
+        <input [(ngModel)]="config.producto" />
+      </label>
+      <label>
+        Organización
+        <input [(ngModel)]="config.organizacion" />
+      </label>
+    </div>
+    <div class="row two-cols">
+      <label>
+        Horizonte inicio
+        <input [(ngModel)]="config.horizonte_base.inicio" placeholder="2026-T1" />
+      </label>
+      <label>
+        Horizonte fin
+        <input [(ngModel)]="config.horizonte_base.fin" placeholder="2030-T4" />
+      </label>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-title">
+      <h3>Ejes estratégicos</h3>
+      <button (click)="addEje()">Añadir eje</button>
+    </div>
+
+    <div class="table" *ngFor="let eje of config.ejes_estrategicos; let i = index">
+      <div class="row three-cols">
+        <label>
+          ID
+          <input [(ngModel)]="eje.id" />
+        </label>
+        <label>
+          Nombre
+          <input [(ngModel)]="eje.nombre" />
+        </label>
+        <label>
+          Color
+          <input [(ngModel)]="eje.color" />
+        </label>
+      </div>
+      <div class="row">
+        <label>
+          Descripción
+          <input [(ngModel)]="eje.descripcion" />
+        </label>
+      </div>
+      <button class="danger" (click)="removeEje(i)">Eliminar eje</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-title">
+      <h3>Iniciativas</h3>
+      <button (click)="addIniciativa()">Añadir iniciativa</button>
+    </div>
+
+    <div class="table" *ngFor="let ini of config.iniciativas; let i = index">
+      <div class="row three-cols">
+        <label>
+          ID
+          <input [(ngModel)]="ini.id" />
+        </label>
+        <label>
+          Nombre
+          <input [(ngModel)]="ini.nombre" />
+        </label>
+        <label>
+          Eje
+          <select [(ngModel)]="ini.eje">
+            <option value="">Sin eje</option>
+            <option *ngFor="let ejeId of ejesIds()" [value]="ejeId">{{ ejeId }}</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="row three-cols">
+        <label>
+          Inicio
+          <input [(ngModel)]="ini.inicio" placeholder="2026-T1" />
+        </label>
+        <label>
+          Fin
+          <input [(ngModel)]="ini.fin" placeholder="2026-T4" />
+        </label>
+        <label>
+          Certeza
+          <select [(ngModel)]="ini.certeza">
+            <option value="comprometido">comprometido</option>
+            <option value="planificado">planificado</option>
+            <option value="exploratorio">exploratorio</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="additional-panel">
+        <div class="additional-header">
+          <strong>Información adicional (dinámica)</strong>
+          <button (click)="addAdditionalField(ini)" type="button">Añadir campo</button>
+        </div>
+        <div class="suggested-row">
+          <button
+            type="button"
+            *ngFor="let suggested of availableSuggestedKeys(ini)"
+            (click)="addSuggestedField(ini, suggested)"
+          >
+            + {{ suggested }}
+          </button>
+        </div>
+        <div class="additional-row" *ngFor="let key of additionalKeys(ini)">
+          <input
+            class="field-key"
+            [ngModel]="key"
+            (ngModelChange)="updateAdditionalKey(ini, key, $event)"
+            placeholder="clave"
+          />
+          <input
+            class="field-value"
+            [ngModel]="ini.informacion_adicional[key]"
+            (ngModelChange)="updateAdditionalValue(ini, key, $event)"
+            placeholder="valor"
+          />
+          <button class="danger-outline" (click)="removeAdditionalField(ini, key)" type="button">Eliminar</button>
+        </div>
+      </div>
+
+      <button class="danger" (click)="removeIniciativa(i)">Eliminar iniciativa</button>
+    </div>
+  </section>
+</ng-container>

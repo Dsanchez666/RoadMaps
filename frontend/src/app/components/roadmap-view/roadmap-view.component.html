@@ -1,0 +1,149 @@
+<section class="header">
+  <button (click)="volver()">Volver</button>
+  <h2>Visualización de Roadmap</h2>
+  <button (click)="editar()" [disabled]="!roadmap?.id">Editar</button>
+</section>
+
+<div *ngIf="error" class="error">
+  {{ error }}
+  <button (click)="reconnect()" [disabled]="reconnecting">
+    {{ reconnecting ? 'Reconectando...' : 'Reconectar' }}
+  </button>
+</div>
+
+<div *ngIf="loading">Cargando...</div>
+<div *ngIf="saveMessage" class="success">{{ saveMessage }}</div>
+
+<section *ngIf="!loading && roadmap && config" class="content">
+  <article class="card summary">
+    <h3>{{ roadmap.title }}</h3>
+    <p>{{ roadmap.description || 'Sin descripción' }}</p>
+    <p><strong>Producto:</strong> {{ config.producto || 'Sin configurar' }}</p>
+    <p><strong>Organización:</strong> {{ config.organizacion || 'Sin configurar' }}</p>
+    <p>
+      <strong>Horizonte:</strong>
+      {{ config.horizonte_base.inicio || '?' }} - {{ config.horizonte_base.fin || '?' }}
+    </p>
+  </article>
+
+  <article class="card legend">
+    <div class="legend-item"><span class="dot certeza-comprometido"></span>Comprometido</div>
+    <div class="legend-item"><span class="dot certeza-planificado"></span>Planificado</div>
+    <div class="legend-item"><span class="dot certeza-exploratorio"></span>Exploratorio</div>
+  </article>
+
+  <article class="card timeline-wrapper" *ngIf="timeline.length > 0">
+    <div
+      class="timeline-header years"
+      [style.gridTemplateColumns]="'280px repeat(' + timeline.length + ', minmax(20px, 1fr))'"
+    >
+      <div class="name-col">Iniciativas</div>
+      <div
+        *ngFor="let group of timelineYearGroups"
+        class="slot year-group"
+        [style.gridColumn]="'span ' + group.span"
+      >
+        {{ group.year }}
+      </div>
+    </div>
+    <div
+      class="timeline-header quarters"
+      [style.gridTemplateColumns]="'280px repeat(' + timeline.length + ', minmax(20px, 1fr))'"
+    >
+      <div class="name-col"></div>
+      <div *ngFor="let slot of timeline; trackBy: trackByQuarter" class="slot">T{{ slot.quarter }}</div>
+    </div>
+
+    <ng-container *ngFor="let eje of config.ejes_estrategicos">
+      <div class="axis-title" [style.borderLeftColor]="eje.color || '#475569'">
+        {{ eje.id }} - {{ eje.nombre }}
+      </div>
+
+      <ng-container *ngIf="axisInitiatives(eje.id).length === 0">
+        <div class="empty-axis">Sin iniciativas</div>
+      </ng-container>
+
+      <div
+        class="initiative-row"
+        *ngFor="let ini of axisInitiatives(eje.id)"
+        [style.gridTemplateColumns]="'280px repeat(' + timeline.length + ', minmax(20px, 1fr))'"
+        [class.dimmed]="isDimmed(ini)"
+        (mouseenter)="onInitiativeHover(ini)"
+        (mouseleave)="clearInitiativeHover()"
+      >
+        <div class="name-col clickable" [title]="getAdditionalValue(ini, 'objetivo')" (click)="openInitiativeModal(ini)">
+          <strong>{{ ini.nombre }}</strong>
+          <small>{{ ini.id }}</small>
+        </div>
+        <div
+          *ngFor="let slot of timeline; trackBy: trackByQuarter"
+          class="slot-cell"
+          [class.filled]="isFilled(ini, slot)"
+          [class]="isFilled(ini, slot) ? certaintyClass(ini.certeza) : ''"
+        ></div>
+      </div>
+    </ng-container>
+  </article>
+</section>
+
+<div class="modal-backdrop" *ngIf="initiativeModalOpen" (click)="closeInitiativeModal()"></div>
+<section class="initiative-modal" *ngIf="initiativeModalOpen && initiativeDraft">
+  <h3>Editar iniciativa</h3>
+
+  <div class="modal-grid">
+    <label>ID<input [(ngModel)]="initiativeDraft.id" /></label>
+    <label>Nombre<input [(ngModel)]="initiativeDraft.nombre" /></label>
+    <label>Eje<input [(ngModel)]="initiativeDraft.eje" /></label>
+    <label>Inicio<input [(ngModel)]="initiativeDraft.inicio" /></label>
+    <label>Fin<input [(ngModel)]="initiativeDraft.fin" /></label>
+    <label>Certeza
+      <select [(ngModel)]="initiativeDraft.certeza">
+        <option value="comprometido">comprometido</option>
+        <option value="planificado">planificado</option>
+        <option value="exploratorio">exploratorio</option>
+      </select>
+    </label>
+  </div>
+
+  <section class="additional-block">
+    <div class="additional-header">
+      <strong>Información adicional</strong>
+      <button type="button" (click)="addDraftAdditionalField()">Añadir campo</button>
+    </div>
+    <div class="suggested-row">
+      <button
+        type="button"
+        *ngFor="let suggested of availableDraftSuggestedKeys()"
+        (click)="addDraftSuggestedField(suggested)"
+      >
+        + {{ suggested }}
+      </button>
+    </div>
+    <div class="additional-row" *ngFor="let key of draftAdditionalKeys()">
+      <input
+        class="field-key"
+        [ngModel]="key"
+        (ngModelChange)="renameDraftAdditionalKey(key, $event)"
+        placeholder="clave"
+      />
+      <input
+        class="field-value"
+        [ngModel]="initiativeDraft.informacion_adicional[key]"
+        (ngModelChange)="updateDraftAdditionalValue(key, $event)"
+        placeholder="valor"
+      />
+      <button class="secondary" type="button" (click)="removeDraftAdditionalField(key)">Eliminar</button>
+    </div>
+  </section>
+
+  <label>Dependencias (IDs separadas por coma)
+    <input [(ngModel)]="dependenciesInput" />
+  </label>
+
+  <div class="modal-actions">
+    <button (click)="saveInitiativeChanges()" [disabled]="savingInitiative">
+      {{ savingInitiative ? 'Guardando...' : 'Guardar en BBDD' }}
+    </button>
+    <button class="secondary" (click)="closeInitiativeModal()" [disabled]="savingInitiative">Cancelar</button>
+  </div>
+</section>
