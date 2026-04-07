@@ -21,6 +21,7 @@ public class Initiative {
     private String fin;
     private String certeza;
     private Map<String, String> informacion_adicional = new LinkedHashMap<>();
+    private List<InitiativeExpediente> expedientes = new ArrayList<>();
     private List<InitiativeDependency> dependencias = new ArrayList<>();
 
     public Initiative() {
@@ -84,6 +85,18 @@ public class Initiative {
             return;
         }
         this.informacion_adicional = new LinkedHashMap<>(informacion_adicional);
+    }
+
+    public List<InitiativeExpediente> getExpedientes() {
+        return expedientes;
+    }
+
+    public void setExpedientes(List<InitiativeExpediente> expedientes) {
+        if (expedientes == null) {
+            this.expedientes = new ArrayList<>();
+            return;
+        }
+        this.expedientes = expedientes;
     }
 
     public List<InitiativeDependency> getDependencias() {

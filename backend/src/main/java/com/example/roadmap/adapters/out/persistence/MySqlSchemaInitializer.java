@@ -66,6 +66,7 @@ public final class MySqlSchemaInitializer {
                     certeza VARCHAR(50),
                     dependencias JSON,
                     informacion_adicional JSON,
+                    expedientes JSON,
                     posicion INT DEFAULT 0,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -76,14 +77,42 @@ public final class MySqlSchemaInitializer {
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
                 """);
 
+            st.execute("""
+                CREATE TABLE IF NOT EXISTS compromisos (
+                    id VARCHAR(50) PRIMARY KEY,
+                    roadmap_id VARCHAR(50) NOT NULL,
+                    descripcion LONGTEXT,
+                    fecha_comprometido VARCHAR(20),
+                    actor VARCHAR(255),
+                    quien_compromete VARCHAR(255),
+                    informacion_adicional JSON,
+                    posicion INT DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    FOREIGN KEY (roadmap_id) REFERENCES roadmaps(id) ON DELETE CASCADE,
+                    INDEX idx_compromisos_roadmap (roadmap_id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                """);
+
             Set<String> missingIniciativas = findMissingColumns(
                 connection,
                 "iniciativas",
-                Set.of("id", "roadmap_id", "eje_id", "nombre", "inicio", "fin", "certeza", "dependencias", "informacion_adicional", "posicion")
+                Set.of("id", "roadmap_id", "eje_id", "nombre", "inicio", "fin", "certeza", "dependencias", "informacion_adicional", "expedientes", "posicion")
             );
             if (!missingIniciativas.isEmpty()) {
                 return "Esquema de iniciativas desactualizado. Faltan columnas: "
                     + String.join(", ", missingIniciativas)
+                    + ". Ejecuta migración SQL en Database/migrations antes de continuar.";
+            }
+
+            Set<String> missingCompromisos = findMissingColumns(
+                connection,
+                "compromisos",
+                Set.of("id", "roadmap_id", "descripcion", "fecha_comprometido", "actor", "quien_compromete", "informacion_adicional", "posicion")
+            );
+            if (!missingCompromisos.isEmpty()) {
+                return "Esquema de compromisos desactualizado. Faltan columnas: "
+                    + String.join(", ", missingCompromisos)
                     + ". Ejecuta migración SQL en Database/migrations antes de continuar.";
             }
             return null;

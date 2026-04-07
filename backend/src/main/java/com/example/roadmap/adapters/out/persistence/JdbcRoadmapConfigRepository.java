@@ -3,8 +3,10 @@ package com.example.roadmap.adapters.out.persistence;
 import com.example.roadmap.DatabaseConnection;
 import com.example.roadmap.domain.Initiative;
 import com.example.roadmap.domain.InitiativeDependency;
+import com.example.roadmap.domain.InitiativeExpediente;
 import com.example.roadmap.domain.RoadmapConfig;
 import com.example.roadmap.domain.RoadmapConfigRepository;
+import com.example.roadmap.domain.RoadmapCommitment;
 import com.example.roadmap.domain.RoadmapHorizon;
 import com.example.roadmap.domain.StrategicAxis;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -47,6 +49,9 @@ public class JdbcRoadmapConfigRepository implements RoadmapConfigRepository {
             LOG.info("Cargando iniciativas para roadmap [{}]", roadmapId);
             config.setIniciativas(readInitiatives(connection, roadmapId));
             LOG.info("Iniciativas cargadas para roadmap [{}]: {}", roadmapId, config.getIniciativas().size());
+            LOG.info("Cargando compromisos para roadmap [{}]", roadmapId);
+            config.setCompromisos(readCommitments(connection, roadmapId));
+            LOG.info("Compromisos cargados para roadmap [{}]: {}", roadmapId, config.getCompromisos().size());
             return Optional.of(config);
         } catch (Exception e) {
             LOG.error("Error cargando configuración para roadmap [{}]", roadmapId, e);
@@ -61,13 +66,15 @@ public class JdbcRoadmapConfigRepository implements RoadmapConfigRepository {
             LOG.info("Guardando configuración de roadmap [{}]", roadmapId);
             connection.setAutoCommit(false);
             updateBaseConfig(connection, roadmapId, config);
+            deleteCommitments(connection, roadmapId);
             deleteInitiatives(connection, roadmapId);
             deleteAxes(connection, roadmapId);
             Map<String, String> axisIdMapping = insertAxes(connection, roadmapId, safeAxes(config));
             insertInitiatives(connection, roadmapId, safeInitiatives(config), axisIdMapping);
+            insertCommitments(connection, roadmapId, safeCommitments(config));
             connection.commit();
-            LOG.info("Configuración guardada correctamente para roadmap [{}]. Ejes: {}, Iniciativas: {}",
-                roadmapId, safeAxes(config).size(), safeInitiatives(config).size());
+            LOG.info("Configuración guardada correctamente para roadmap [{}]. Ejes: {}, Iniciativas: {}, Compromisos: {}",
+                roadmapId, safeAxes(config).size(), safeInitiatives(config).size(), safeCommitments(config).size());
         } catch (Exception e) {
             rollbackQuietly(connection);
             LOG.error("Error guardando configuración para roadmap [{}]", roadmapId, e);
@@ -118,7 +125,7 @@ public class JdbcRoadmapConfigRepository implements RoadmapConfigRepository {
     }
 
     private List<Initiative> readInitiatives(Connection connection, String roadmapId) throws Exception {
-        String sql = "SELECT id, eje_id, nombre, inicio, fin, certeza, dependencias, informacion_adicional " +
+        String sql = "SELECT id, eje_id, nombre, inicio, fin, certeza, dependencias, informacion_adicional, expedientes " +
             "FROM iniciativas WHERE roadmap_id = ? ORDER BY posicion ASC, created_at ASC";
         List<Initiative> out = new ArrayList<>();
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -134,6 +141,7 @@ public class JdbcRoadmapConfigRepository implements RoadmapConfigRepository {
                     initiative.setCerteza(valueOrEmpty(rs.getString("certeza")));
                     initiative.setDependencias(readDependencies(rs.getString("dependencias")));
                     initiative.setInformacion_adicional(readAdditionalInfo(rs.getString("informacion_adicional")));
+                    initiative.setExpedientes(readExpedientes(rs.getString("expedientes"), initiative.getInformacion_adicional()));
                     out.add(initiative);
                 }
             }
@@ -184,6 +192,73 @@ public class JdbcRoadmapConfigRepository implements RoadmapConfigRepository {
         }
     }
 
+    /**
+     * Reads initiative expedientes from JSON column.
+     *
+     * <p>
+     * Backward compatibility:
+     * when no structured expedientes are found, it builds one implicit
+     * expediente from known legacy keys stored in informacion_adicional.
+     * </p>
+     *
+     * @param rawJson Raw JSON array from DB column.
+     * @param additionalInfo Initiative additional data map.
+     * @return List<InitiativeExpediente> parsed expedientes.
+     */
+    private List<InitiativeExpediente> readExpedientes(String rawJson, Map<String, String> additionalInfo) {
+        try {
+            if (rawJson != null && !rawJson.isBlank()) {
+                return OBJECT_MAPPER.readValue(rawJson, new TypeReference<List<InitiativeExpediente>>() {
+                });
+            }
+        } catch (Exception ignored) {
+            // fall through to compatibility path
+        }
+
+        InitiativeExpediente fallback = buildFallbackExpediente(additionalInfo);
+        if (fallback == null) {
+            return new ArrayList<>();
+        }
+        return new ArrayList<>(List.of(fallback));
+    }
+
+    /**
+     * Builds one expediente object from legacy initiative additional keys.
+     */
+    private InitiativeExpediente buildFallbackExpediente(Map<String, String> additionalInfo) {
+        if (additionalInfo == null || additionalInfo.isEmpty()) {
+            return null;
+        }
+        String expediente = valueOrEmpty(additionalInfo.get("expediente"));
+        String empresa = valueOrEmpty(additionalInfo.get("empresa"));
+        String precioLicitacion = valueOrEmpty(additionalInfo.get("precio_licitacion"));
+        String precioAdjudicacion = valueOrEmpty(additionalInfo.get("precio_adjudicacion"));
+        String fechaFin = valueOrEmpty(additionalInfo.get("fecha_fin_expediente"));
+        String tipo = valueOrEmpty(additionalInfo.get("tipo"));
+        String impacto = valueOrEmpty(additionalInfo.get("impacto_principal"));
+
+        if (expediente.isBlank() && empresa.isBlank() && precioLicitacion.isBlank() && precioAdjudicacion.isBlank() && fechaFin.isBlank()) {
+            return null;
+        }
+
+        InitiativeExpediente out = new InitiativeExpediente();
+        out.setTipo(tipo);
+        out.setEmpresa(empresa);
+        out.setExpediente(expediente);
+        out.setImpacto(impacto);
+        out.setPrecio_licitacion(precioLicitacion);
+        out.setPrecio_adjudicacion(precioAdjudicacion);
+        out.setFecha_fin_expediente(fechaFin);
+        return out;
+    }
+
+    private void deleteCommitments(Connection connection, String roadmapId) throws Exception {
+        try (PreparedStatement ps = connection.prepareStatement("DELETE FROM compromisos WHERE roadmap_id = ?")) {
+            ps.setString(1, roadmapId);
+            ps.executeUpdate();
+        }
+    }
+
     private void deleteAxes(Connection connection, String roadmapId) throws Exception {
         try (PreparedStatement ps = connection.prepareStatement("DELETE FROM ejes_estrategicos WHERE roadmap_id = ?")) {
             ps.setString(1, roadmapId);
@@ -225,8 +300,8 @@ public class JdbcRoadmapConfigRepository implements RoadmapConfigRepository {
         List<Initiative> initiatives,
         Map<String, String> axisIdMapping
     ) throws Exception {
-        String sql = "INSERT INTO iniciativas (id, roadmap_id, eje_id, nombre, inicio, fin, certeza, dependencias, informacion_adicional, posicion) " +
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO iniciativas (id, roadmap_id, eje_id, nombre, inicio, fin, certeza, dependencias, informacion_adicional, expedientes, posicion) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             for (int i = 0; i < initiatives.size(); i++) {
                 Initiative initiative = initiatives.get(i);
@@ -245,7 +320,64 @@ public class JdbcRoadmapConfigRepository implements RoadmapConfigRepository {
                 ps.setString(7, valueOrEmpty(initiative.getCerteza()));
                 ps.setString(8, OBJECT_MAPPER.writeValueAsString(safeDependencies(initiative)));
                 ps.setString(9, OBJECT_MAPPER.writeValueAsString(safeAdditionalInfo(initiative)));
-                ps.setInt(10, i);
+                ps.setString(10, OBJECT_MAPPER.writeValueAsString(safeExpedientes(initiative)));
+                ps.setInt(11, i);
+                ps.addBatch();
+            }
+            ps.executeBatch();
+        }
+    }
+
+    /**
+     * Reads commitment rows for one roadmap preserving persisted order.
+     *
+     * @param connection Active JDBC connection.
+     * @param roadmapId Roadmap identifier.
+     * @return List<RoadmapCommitment> loaded commitments.
+     */
+    private List<RoadmapCommitment> readCommitments(Connection connection, String roadmapId) throws Exception {
+        String sql = "SELECT id, descripcion, fecha_comprometido, actor, quien_compromete, informacion_adicional " +
+            "FROM compromisos WHERE roadmap_id = ? ORDER BY posicion ASC, created_at ASC";
+        List<RoadmapCommitment> out = new ArrayList<>();
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            ps.setString(1, roadmapId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    RoadmapCommitment commitment = new RoadmapCommitment();
+                    commitment.setId(valueOrEmpty(rs.getString("id")));
+                    commitment.setDescripcion(valueOrEmpty(rs.getString("descripcion")));
+                    commitment.setFecha_comprometido(valueOrEmpty(rs.getString("fecha_comprometido")));
+                    commitment.setActor(valueOrEmpty(rs.getString("actor")));
+                    commitment.setQuien_compromete(valueOrEmpty(rs.getString("quien_compromete")));
+                    commitment.setInformacion_adicional(readAdditionalInfo(rs.getString("informacion_adicional")));
+                    out.add(commitment);
+                }
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Inserts all roadmap commitments in batch mode.
+     *
+     * @param connection Active JDBC connection.
+     * @param roadmapId Roadmap identifier.
+     * @param commitments Commitments to persist.
+     */
+    private void insertCommitments(Connection connection, String roadmapId, List<RoadmapCommitment> commitments) throws Exception {
+        String sql = "INSERT INTO compromisos (id, roadmap_id, descripcion, fecha_comprometido, actor, quien_compromete, informacion_adicional, posicion) " +
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            for (int i = 0; i < commitments.size(); i++) {
+                RoadmapCommitment commitment = commitments.get(i);
+                ps.setString(1, valueOrEmpty(commitment.getId()));
+                ps.setString(2, roadmapId);
+                ps.setString(3, valueOrEmpty(commitment.getDescripcion()));
+                ps.setString(4, valueOrEmpty(commitment.getFecha_comprometido()));
+                ps.setString(5, valueOrEmpty(commitment.getActor()));
+                ps.setString(6, valueOrEmpty(commitment.getQuien_compromete()));
+                ps.setString(7, OBJECT_MAPPER.writeValueAsString(safeAdditionalInfo(commitment)));
+                ps.setInt(8, i);
                 ps.addBatch();
             }
             ps.executeBatch();
@@ -260,6 +392,10 @@ public class JdbcRoadmapConfigRepository implements RoadmapConfigRepository {
         return (config.getIniciativas() != null) ? config.getIniciativas() : new ArrayList<>();
     }
 
+    private List<RoadmapCommitment> safeCommitments(RoadmapConfig config) {
+        return (config.getCompromisos() != null) ? config.getCompromisos() : new ArrayList<>();
+    }
+
     private List<InitiativeDependency> safeDependencies(Initiative initiative) {
         return (initiative.getDependencias() != null) ? initiative.getDependencias() : new ArrayList<>();
     }
@@ -269,6 +405,20 @@ public class JdbcRoadmapConfigRepository implements RoadmapConfigRepository {
             return new HashMap<>();
         }
         return initiative.getInformacion_adicional();
+    }
+
+    private List<InitiativeExpediente> safeExpedientes(Initiative initiative) {
+        if (initiative.getExpedientes() == null) {
+            return new ArrayList<>();
+        }
+        return initiative.getExpedientes();
+    }
+
+    private Map<String, String> safeAdditionalInfo(RoadmapCommitment commitment) {
+        if (commitment.getInformacion_adicional() == null) {
+            return new HashMap<>();
+        }
+        return commitment.getInformacion_adicional();
     }
 
     private RoadmapHorizon safeHorizon(RoadmapConfig config) {

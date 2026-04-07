@@ -199,6 +199,7 @@ public class RoadmapController {
         public com.example.roadmap.domain.RoadmapHorizon horizonte_base;
         public List<com.example.roadmap.domain.StrategicAxis> ejes_estrategicos;
         public List<com.example.roadmap.domain.Initiative> iniciativas;
+        public List<com.example.roadmap.domain.RoadmapCommitment> compromisos;
 
         public RoadmapConfig toRoadmapConfig() {
             RoadmapConfig config = new RoadmapConfig();
@@ -209,6 +210,7 @@ public class RoadmapController {
                 : horizonte_base);
             config.setEjes_estrategicos(ejes_estrategicos == null ? List.of() : ejes_estrategicos);
             config.setIniciativas(iniciativas == null ? List.of() : iniciativas);
+            config.setCompromisos(compromisos == null ? List.of() : compromisos);
             return config;
         }
     }

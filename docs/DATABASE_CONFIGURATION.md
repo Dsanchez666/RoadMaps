@@ -16,6 +16,8 @@ Before connecting the backend to an existing database, run:
 
 ```sql
 SOURCE Database/migrations/2026-03-25_iniciativas_informacion_adicional.sql;
+SOURCE Database/migrations/2026-03-26_iniciativas_expedientes.sql;
+SOURCE Database/migrations/2026-03-26_compromisos.sql;
 ```
 
 If this migration is not applied, `/api/database/connect/mysql` returns error and blocks the connection with an explicit schema message.

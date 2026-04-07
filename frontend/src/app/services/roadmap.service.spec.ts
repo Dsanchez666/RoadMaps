@@ -25,7 +25,8 @@ describe('RoadmapService', () => {
       organizacion: 'ENAIRE',
       horizonte_base: { inicio: '2026-T1', fin: '2030-T4' },
       ejes_estrategicos: [],
-      iniciativas: []
+      iniciativas: [],
+      compromisos: []
     };
 
     service.getConfig('rm-1').subscribe((result) => {
@@ -52,9 +53,11 @@ describe('RoadmapService', () => {
           fin: '2026-T2',
           certeza: 'planificado',
           informacion_adicional: { tipo: 'mantenimiento', expediente: 'DNA-1' },
+          expedientes: [],
           dependencias: []
         }
-      ]
+      ],
+      compromisos: []
     };
 
     service.saveConfig('rm-2', config).subscribe();
@@ -73,7 +76,8 @@ describe('RoadmapService', () => {
       organizacion: 'ENAIRE',
       horizonte_base: { inicio: '2026-T1', fin: '2030-T4' },
       ejes_estrategicos: [],
-      iniciativas: []
+      iniciativas: [],
+      compromisos: []
     };
 
     service.importRoadmap(payload).subscribe((roadmap) => {

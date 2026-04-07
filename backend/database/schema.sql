@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS iniciativas (
     certeza VARCHAR(50),
     dependencias JSON,
     informacion_adicional JSON,
+    expedientes JSON,
     posicion INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -48,6 +49,22 @@ CREATE TABLE IF NOT EXISTS iniciativas (
     FOREIGN KEY (eje_id) REFERENCES ejes_estrategicos(id) ON DELETE SET NULL,
     INDEX idx_roadmap (roadmap_id),
     INDEX idx_eje (eje_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Table for Commitments (Compromisos)
+CREATE TABLE IF NOT EXISTS compromisos (
+    id VARCHAR(50) PRIMARY KEY,
+    roadmap_id VARCHAR(50) NOT NULL,
+    descripcion LONGTEXT,
+    fecha_comprometido VARCHAR(20),
+    actor VARCHAR(255),
+    quien_compromete VARCHAR(255),
+    informacion_adicional JSON,
+    posicion INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (roadmap_id) REFERENCES roadmaps(id) ON DELETE CASCADE,
+    INDEX idx_roadmap (roadmap_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Indexes for better performance

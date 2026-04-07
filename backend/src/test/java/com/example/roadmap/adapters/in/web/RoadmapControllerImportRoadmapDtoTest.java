@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RoadmapControllerImportRoadmapDtoTest {
 
@@ -23,6 +24,7 @@ class RoadmapControllerImportRoadmapDtoTest {
         assertNotNull(config.getHorizonte_base());
         assertNotNull(config.getEjes_estrategicos());
         assertNotNull(config.getIniciativas());
+        assertNotNull(config.getCompromisos());
     }
 
     @Test
@@ -62,5 +64,34 @@ class RoadmapControllerImportRoadmapDtoTest {
 
         assertEquals("mantenimiento", config.getIniciativas().get(0).getInformacion_adicional().get("tipo"));
         assertEquals("DNA-1", config.getIniciativas().get(0).getInformacion_adicional().get("expediente"));
+    }
+
+    @Test
+    void toRoadmapConfigKeepsCompromisosPayload() throws Exception {
+        String json = """
+            {
+              "title": "ETNA",
+              "compromisos": [
+                {
+                  "id": "COMP-1",
+                  "descripcion": "Cerrar expediente X",
+                  "fecha_comprometido": "2026-06-30",
+                  "actor": "Proveedor",
+                  "quien_compromete": "Jefe de proyecto",
+                  "informacion_adicional": {
+                    "estado": "pendiente"
+                  }
+                }
+              ]
+            }
+            """;
+
+        ObjectMapper mapper = new ObjectMapper();
+        RoadmapController.ImportRoadmapDto dto = mapper.readValue(json, RoadmapController.ImportRoadmapDto.class);
+        RoadmapConfig config = dto.toRoadmapConfig();
+
+        assertEquals(1, config.getCompromisos().size());
+        assertEquals("COMP-1", config.getCompromisos().get(0).getId());
+        assertTrue(config.getCompromisos().get(0).getInformacion_adicional().containsKey("estado"));
     }
 }

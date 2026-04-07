@@ -2,7 +2,14 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { ConnectionStateService } from '../../services/connection-state.service';
-import { InitiativeConfig, Roadmap, RoadmapConfig, RoadmapService } from '../../services/roadmap.service';
+import {
+  CommitmentConfig,
+  InitiativeConfig,
+  InitiativeExpediente,
+  Roadmap,
+  RoadmapConfig,
+  RoadmapService
+} from '../../services/roadmap.service';
 
 interface TimelineSlot {
   key: string;
@@ -14,6 +21,28 @@ interface TimelineYearGroup {
   year: number;
   span: number;
 }
+
+interface TimelineQuarter {
+  year: number;
+  quarter: number;
+}
+
+interface ExpeditionRow {
+  initiativeId: string;
+  initiativeName: string;
+  initiativeExpeditionIndex: number;
+  tipo: string;
+  expediente: string;
+  impacto: string;
+  precioLicitacion: string;
+  precioAdjudicacion: string;
+  empresa: string;
+  fechaFinExpediente: string;
+  informacionAdicional: Record<string, string>;
+}
+
+type InitiativeModalTab = 'general' | 'expedientes' | 'adicional';
+type SidePanel = 'none' | 'expedientes' | 'compromisos';
 
 /**
  * RoadmapViewComponent
@@ -29,20 +58,44 @@ interface TimelineYearGroup {
 export class RoadmapViewComponent implements OnInit {
   roadmap: Roadmap | null = null;
   config: RoadmapConfig | null = null;
-  readonly suggestedAdditionalKeys = ['tipo', 'expediente', 'objetivo', 'impacto_principal', 'usuarios_afectados'];
+  readonly quarterOptions = [1, 2, 3, 4];
+  readonly suggestedAdditionalKeys = [
+    'tipo',
+    'expediente',
+    'precio_licitacion',
+    'precio_adjudicacion',
+    'empresa',
+    'fecha_fin_expediente',
+    'objetivo',
+    'impacto_principal',
+    'usuarios_afectados'
+  ];
+  readonly commitmentAdditionalKeys = ['importe', 'estado', 'observaciones'];
+  yearOptions: number[] = [2026, 2027, 2028, 2029, 2030];
+  selectedStartYear = 2026;
+  selectedStartQuarter = 1;
+  selectedEndYear = 2030;
+  selectedEndQuarter = 4;
   timeline: TimelineSlot[] = [];
   timelineYearGroups: TimelineYearGroup[] = [];
   initiativesByAxis: Record<string, InitiativeConfig[]> = {};
+  showCommitmentForm = false;
   loading = false;
   savingInitiative = false;
+  savingCommitment = false;
   error = '';
   saveMessage = '';
   reconnecting = false;
   hoverFocusIds: Set<string> | null = null;
   initiativeModalOpen = false;
+  activeInitiativeTab: InitiativeModalTab = 'general';
+  activePanel: SidePanel = 'none';
   editingInitiativeId = '';
   initiativeDraft: InitiativeConfig | null = null;
   dependenciesInput = '';
+  expeditionSearch = '';
+  commitmentSearch = '';
+  commitmentDraft: CommitmentConfig = this.createEmptyCommitmentDraft();
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -112,8 +165,8 @@ export class RoadmapViewComponent implements OnInit {
           next: (config) => {
             const normalized = this.ensureConfigDefaults(config);
             this.config = normalized;
-            this.timeline = this.buildTimeline(normalized);
-            this.timelineYearGroups = this.buildYearGroups(this.timeline);
+            this.initializeHorizonSelector(normalized);
+            this.rebuildTimeline();
             this.initiativesByAxis = this.groupInitiativesByAxis(normalized);
             this.loading = false;
           },
@@ -171,6 +224,7 @@ export class RoadmapViewComponent implements OnInit {
     this.error = '';
     this.editingInitiativeId = initiative.id;
     this.initiativeDraft = this.normalizeInitiative(JSON.parse(JSON.stringify(initiative)));
+    this.activeInitiativeTab = 'general';
     this.dependenciesInput = (initiative.dependencias || [])
       .map((d) => d.iniciativa)
       .filter((v) => !!v)
@@ -183,6 +237,11 @@ export class RoadmapViewComponent implements OnInit {
     this.initiativeDraft = null;
     this.editingInitiativeId = '';
     this.dependenciesInput = '';
+    this.activeInitiativeTab = 'general';
+  }
+
+  setInitiativeTab(tab: InitiativeModalTab): void {
+    this.activeInitiativeTab = tab;
   }
 
   saveInitiativeChanges(): void {
@@ -209,20 +268,18 @@ export class RoadmapViewComponent implements OnInit {
       tipo: currentDeps.get(id) || 'funcional'
     }));
 
+    const previousValue = this.config.iniciativas[index];
     this.config.iniciativas[index] = this.normalizeInitiative(JSON.parse(JSON.stringify(this.initiativeDraft)));
-    this.savingInitiative = true;
-    this.roadmapService.saveConfig(this.roadmap.id, this.config).subscribe({
-      next: () => {
-        this.savingInitiative = false;
+    this.persistConfig(
+      () => {
         this.saveMessage = 'Iniciativa actualizada correctamente.';
         this.initiativesByAxis = this.groupInitiativesByAxis(this.config!);
         this.closeInitiativeModal();
       },
-      error: (err) => {
-        this.savingInitiative = false;
-        this.error = err?.error?.message || 'No se pudo guardar cambios de la iniciativa.';
+      () => {
+        this.config!.iniciativas[index] = previousValue;
       }
-    });
+    );
   }
 
   isFilled(initiative: InitiativeConfig, slot: TimelineSlot): boolean {
@@ -250,6 +307,291 @@ export class RoadmapViewComponent implements OnInit {
 
   trackByQuarter(_: number, slot: TimelineSlot): string {
     return slot.key;
+  }
+
+  /**
+   * Rebuilds timeline from selected horizon values.
+   */
+  onHorizonChange(): void {
+    this.rebuildTimeline();
+  }
+
+  /**
+   * Toggles expedition panel visibility.
+   */
+  openExpedientesPanel(): void {
+    this.activePanel = this.activePanel === 'expedientes' ? 'none' : 'expedientes';
+  }
+
+  /**
+   * Toggles commitment panel visibility.
+   */
+  openCompromisosPanel(): void {
+    this.activePanel = this.activePanel === 'compromisos' ? 'none' : 'compromisos';
+    if (this.activePanel !== 'compromisos') {
+      this.showCommitmentForm = false;
+    }
+  }
+
+  closeSidePanel(): void {
+    this.activePanel = 'none';
+    this.showCommitmentForm = false;
+  }
+
+  /**
+   * Returns initiatives containing expedition data.
+   */
+  expeditionRows(): ExpeditionRow[] {
+    if (!this.config) {
+      return [];
+    }
+
+    const rows: ExpeditionRow[] = [];
+    for (const initiative of this.config.iniciativas) {
+      const expedientes = this.resolveInitiativeExpedientes(initiative);
+      for (let index = 0; index < expedientes.length; index++) {
+        const expediente = expedientes[index];
+        const row: ExpeditionRow = {
+          initiativeId: initiative.id,
+          initiativeName: initiative.nombre,
+          initiativeExpeditionIndex: index,
+          tipo: this.resolveExpedientePrimaryValue(expediente, 'tipo', ['tipo']),
+          expediente: this.resolveExpedientePrimaryValue(expediente, 'expediente', ['expediente']),
+          impacto: this.resolveExpedientePrimaryValue(expediente, 'impacto', ['impacto', 'impacto_principal']),
+          precioLicitacion: this.resolveExpedientePrimaryValue(expediente, 'precio_licitacion', ['precio_licitacion']),
+          precioAdjudicacion: this.resolveExpedientePrimaryValue(expediente, 'precio_adjudicacion', ['precio_adjudicacion']),
+          empresa: this.resolveExpedientePrimaryValue(expediente, 'empresa', ['empresa']),
+          fechaFinExpediente: this.resolveExpedientePrimaryValue(expediente, 'fecha_fin_expediente', ['fecha_fin_expediente']),
+          informacionAdicional: { ...(expediente.informacion_adicional || {}) }
+        };
+        if (this.hasExpedienteContent(row)) {
+          rows.push(row);
+        }
+      }
+    }
+    return rows;
+  }
+
+  filteredExpeditionRows(): ExpeditionRow[] {
+    const filter = this.expeditionSearch.trim().toLowerCase();
+    const rows = this.expeditionRows();
+    if (!filter) {
+      return rows;
+    }
+    return rows.filter((row) => {
+      const values = [
+        row.initiativeId,
+        row.initiativeName,
+        row.tipo,
+        row.expediente,
+        row.impacto,
+        row.precioLicitacion,
+        row.precioAdjudicacion,
+        row.empresa,
+        row.fechaFinExpediente,
+        ...Object.entries(row.informacionAdicional || {}).flat()
+      ];
+      return values.some((value) => String(value || '').toLowerCase().includes(filter));
+    });
+  }
+
+  /**
+   * Opens the initiative modal for one expedition row.
+   */
+  openExpeditionDetails(row: ExpeditionRow): void {
+    if (!this.config) {
+      return;
+    }
+    const initiative = this.config.iniciativas.find((item) => item.id === row.initiativeId);
+    if (!initiative) {
+      return;
+    }
+    this.openInitiativeModal(initiative);
+  }
+
+  /**
+   * Returns current roadmap commitments.
+   */
+  commitments(): CommitmentConfig[] {
+    return this.config?.compromisos || [];
+  }
+
+  filteredCommitments(): CommitmentConfig[] {
+    const filter = this.commitmentSearch.trim().toLowerCase();
+    const items = this.commitments();
+    if (!filter) {
+      return items;
+    }
+    return items.filter((commitment) => {
+      const values = [
+        commitment.id,
+        commitment.descripcion,
+        commitment.fecha_comprometido,
+        commitment.actor,
+        commitment.quien_compromete,
+        ...Object.entries(commitment.informacion_adicional || {}).flat()
+      ];
+      return values.some((value) => String(value || '').toLowerCase().includes(filter));
+    });
+  }
+
+  /**
+   * Opens commitment creation form.
+   */
+  showAddCommitmentForm(): void {
+    this.error = '';
+    this.saveMessage = '';
+    this.activePanel = 'compromisos';
+    this.showCommitmentForm = true;
+  }
+
+  /**
+   * Opens commitments panel from initiative modal context.
+   */
+  openCommitmentPanelFromInitiative(): void {
+    this.activePanel = 'compromisos';
+    this.showAddCommitmentForm();
+    this.closeInitiativeModal();
+  }
+
+  /**
+   * Closes commitment creation form and clears draft.
+   */
+  cancelCommitmentForm(): void {
+    this.showCommitmentForm = false;
+    this.commitmentDraft = this.createEmptyCommitmentDraft();
+  }
+
+  /**
+   * Creates one new commitment and persists the roadmap config.
+   */
+  addCommitment(): void {
+    if (!this.config || !this.roadmap?.id) {
+      return;
+    }
+    if (!this.commitmentDraft.descripcion.trim()) {
+      this.error = 'La descripción del compromiso es obligatoria.';
+      return;
+    }
+
+    const newCommitment: CommitmentConfig = {
+      ...this.commitmentDraft,
+      id: this.commitmentDraft.id.trim() || `COMP-${Date.now()}`,
+      descripcion: this.commitmentDraft.descripcion.trim(),
+      actor: this.commitmentDraft.actor.trim(),
+      quien_compromete: this.commitmentDraft.quien_compromete.trim(),
+      informacion_adicional: { ...(this.commitmentDraft.informacion_adicional || {}) }
+    };
+    this.config.compromisos.push(newCommitment);
+    this.persistConfig(
+      () => {
+        this.saveMessage = 'Compromiso guardado correctamente.';
+        this.cancelCommitmentForm();
+      },
+      () => {
+        // rollback local insertion on failure.
+        this.config!.compromisos = this.config!.compromisos.filter((item) => item !== newCommitment);
+      },
+      true
+    );
+  }
+
+  /**
+   * Removes one commitment and persists changes.
+   *
+   * @param index Position in commitment list.
+   */
+  removeCommitment(commitment: CommitmentConfig): void {
+    if (!this.config || !this.roadmap?.id) {
+      return;
+    }
+    const index = this.config.compromisos.indexOf(commitment);
+    if (index < 0 || index >= this.config.compromisos.length) {
+      return;
+    }
+
+    const removed = this.config.compromisos.splice(index, 1)[0];
+    this.persistConfig(
+      () => {
+        this.saveMessage = 'Compromiso eliminado correctamente.';
+      },
+      () => {
+        this.config!.compromisos.splice(index, 0, removed);
+      },
+      true
+    );
+  }
+
+  /**
+   * Returns custom field keys configured in commitment draft.
+   */
+  commitmentAdditionalDraftKeys(): string[] {
+    return Object.keys(this.commitmentDraft.informacion_adicional || {});
+  }
+
+  /**
+   * Returns suggested commitment custom keys still not configured in draft.
+   */
+  availableCommitmentSuggestedKeys(): string[] {
+    const existing = new Set(this.commitmentAdditionalDraftKeys());
+    return this.commitmentAdditionalKeys.filter((key) => !existing.has(key));
+  }
+
+  /**
+   * Adds one suggested key to commitment draft custom fields.
+   */
+  addCommitmentSuggestedKey(key: string): void {
+    const normalized = (key || '').trim();
+    if (!normalized) {
+      return;
+    }
+    if (!Object.prototype.hasOwnProperty.call(this.commitmentDraft.informacion_adicional, normalized)) {
+      this.commitmentDraft.informacion_adicional[normalized] = '';
+    }
+  }
+
+  /**
+   * Adds one new custom field to commitment draft.
+   */
+  addCommitmentAdditionalField(): void {
+    const existing = new Set(Object.keys(this.commitmentDraft.informacion_adicional || {}));
+    let candidate = 'nuevo_campo';
+    let suffix = 1;
+    while (existing.has(candidate)) {
+      suffix += 1;
+      candidate = `nuevo_campo_${suffix}`;
+    }
+    this.commitmentDraft.informacion_adicional[candidate] = '';
+  }
+
+  /**
+   * Renames one custom field key inside commitment draft.
+   */
+  renameCommitmentAdditionalKey(oldKey: string, newKey: string): void {
+    const nextKey = (newKey || '').trim();
+    if (!nextKey || nextKey === oldKey) {
+      return;
+    }
+    if (Object.prototype.hasOwnProperty.call(this.commitmentDraft.informacion_adicional, nextKey)) {
+      return;
+    }
+    const value = this.commitmentDraft.informacion_adicional[oldKey];
+    delete this.commitmentDraft.informacion_adicional[oldKey];
+    this.commitmentDraft.informacion_adicional[nextKey] = value;
+  }
+
+  /**
+   * Updates one custom field value inside commitment draft.
+   */
+  updateCommitmentAdditionalValue(key: string, value: string): void {
+    this.commitmentDraft.informacion_adicional[key] = value;
+  }
+
+  /**
+   * Removes one custom field from commitment draft.
+   */
+  removeCommitmentAdditionalField(key: string): void {
+    delete this.commitmentDraft.informacion_adicional[key];
   }
 
   /**
@@ -346,6 +688,149 @@ export class RoadmapViewComponent implements OnInit {
   }
 
   /**
+   * Returns one custom value from current initiative draft.
+   */
+  getDraftAdditionalValue(key: string): string {
+    if (!this.initiativeDraft?.informacion_adicional) {
+      return '';
+    }
+    return this.initiativeDraft.informacion_adicional[key] || '';
+  }
+
+  /**
+   * Returns expedientes currently configured in initiative draft.
+   */
+  draftExpedientes(): InitiativeExpediente[] {
+    if (!this.initiativeDraft) {
+      return [];
+    }
+    if (!Array.isArray(this.initiativeDraft.expedientes)) {
+      this.initiativeDraft.expedientes = [];
+    }
+    return this.initiativeDraft.expedientes;
+  }
+
+  /**
+   * Adds one new expediente row in initiative draft.
+   */
+  addDraftExpediente(): void {
+    if (!this.initiativeDraft) {
+      return;
+    }
+    this.draftExpedientes().push(this.createEmptyExpediente());
+  }
+
+  /**
+   * Removes one expediente row from initiative draft.
+   */
+  removeDraftExpediente(index: number): void {
+    if (!this.initiativeDraft) {
+      return;
+    }
+    if (index < 0 || index >= this.draftExpedientes().length) {
+      return;
+    }
+    this.initiativeDraft.expedientes.splice(index, 1);
+  }
+
+  /**
+   * Returns custom keys configured for one expediente row.
+   */
+  draftExpedienteAdditionalKeys(expediente: InitiativeExpediente): string[] {
+    return Object.keys(expediente.informacion_adicional || {});
+  }
+
+  /**
+   * Returns suggested expediente keys not already represented by first-class
+   * fields or custom fields in the current row.
+   */
+  availableDraftExpedienteSuggestedKeys(expediente: InitiativeExpediente): string[] {
+    const reserved = new Set([
+      'tipo',
+      'empresa',
+      'expediente',
+      'impacto',
+      'precio_licitacion',
+      'precio_adjudicacion',
+      'fecha_fin_expediente'
+    ]);
+    const existing = new Set(this.draftExpedienteAdditionalKeys(expediente));
+    return this.suggestedAdditionalKeys.filter((key) => !reserved.has(key) && !existing.has(key));
+  }
+
+  /**
+   * Adds one custom field to an expediente row.
+   */
+  addDraftExpedienteAdditionalField(expediente: InitiativeExpediente): void {
+    if (!expediente.informacion_adicional) {
+      expediente.informacion_adicional = {};
+    }
+    const existing = new Set(Object.keys(expediente.informacion_adicional));
+    let candidate = 'nuevo_campo';
+    let suffix = 1;
+    while (existing.has(candidate)) {
+      suffix += 1;
+      candidate = `nuevo_campo_${suffix}`;
+    }
+    expediente.informacion_adicional[candidate] = '';
+  }
+
+  /**
+   * Adds one suggested custom field to an expediente row.
+   */
+  addDraftExpedienteSuggestedField(expediente: InitiativeExpediente, key: string): void {
+    const normalized = (key || '').trim();
+    if (!normalized) {
+      return;
+    }
+    if (!expediente.informacion_adicional) {
+      expediente.informacion_adicional = {};
+    }
+    if (!Object.prototype.hasOwnProperty.call(expediente.informacion_adicional, normalized)) {
+      expediente.informacion_adicional[normalized] = '';
+    }
+  }
+
+  /**
+   * Renames one custom key in expediente row.
+   */
+  renameDraftExpedienteAdditionalKey(expediente: InitiativeExpediente, oldKey: string, newKey: string): void {
+    const nextKey = (newKey || '').trim();
+    if (!nextKey || nextKey === oldKey) {
+      return;
+    }
+    if (!expediente.informacion_adicional) {
+      expediente.informacion_adicional = {};
+    }
+    if (Object.prototype.hasOwnProperty.call(expediente.informacion_adicional, nextKey)) {
+      return;
+    }
+    const value = expediente.informacion_adicional[oldKey];
+    delete expediente.informacion_adicional[oldKey];
+    expediente.informacion_adicional[nextKey] = value;
+  }
+
+  /**
+   * Updates one custom value in expediente row.
+   */
+  updateDraftExpedienteAdditionalValue(expediente: InitiativeExpediente, key: string, value: string): void {
+    if (!expediente.informacion_adicional) {
+      expediente.informacion_adicional = {};
+    }
+    expediente.informacion_adicional[key] = value;
+  }
+
+  /**
+   * Removes one custom field from expediente row.
+   */
+  removeDraftExpedienteAdditionalField(expediente: InitiativeExpediente, key: string): void {
+    if (!expediente.informacion_adicional) {
+      return;
+    }
+    delete expediente.informacion_adicional[key];
+  }
+
+  /**
    * Removes one dynamic field from modal draft.
    */
   removeDraftAdditionalField(key: string): void {
@@ -355,13 +840,59 @@ export class RoadmapViewComponent implements OnInit {
     delete this.initiativeDraft.informacion_adicional[key];
   }
 
-  private buildTimeline(config: RoadmapConfig): TimelineSlot[] {
-    const start = this.parseQuarter(config.horizonte_base?.inicio);
-    const end = this.parseQuarter(config.horizonte_base?.fin);
-    if (!start || !end) {
-      return [];
+  /**
+   * Initializes horizon selector from configuration using default 2026-T1 .. 2030-T4 fallback.
+   */
+  private initializeHorizonSelector(config: RoadmapConfig): void {
+    const start = this.parseQuarter(config.horizonte_base?.inicio) || { year: 2026, quarter: 1 };
+    const end = this.parseQuarter(config.horizonte_base?.fin) || { year: 2030, quarter: 4 };
+    this.selectedStartYear = start.year;
+    this.selectedStartQuarter = start.quarter;
+    this.selectedEndYear = end.year;
+    this.selectedEndQuarter = end.quarter;
+
+    const years = [2026, 2030, start.year, end.year];
+    for (const initiative of config.iniciativas || []) {
+      const iniStart = this.parseQuarter(initiative.inicio);
+      const iniEnd = this.parseQuarter(initiative.fin);
+      if (iniStart) {
+        years.push(iniStart.year);
+      }
+      if (iniEnd) {
+        years.push(iniEnd.year);
+      }
     }
 
+    const minYear = Math.min(...years);
+    const maxYear = Math.max(...years);
+    this.yearOptions = [];
+    for (let year = minYear; year <= maxYear; year++) {
+      this.yearOptions.push(year);
+    }
+  }
+
+  /**
+   * Rebuilds timeline and year-groups using currently selected horizon values.
+   */
+  private rebuildTimeline(): void {
+    const start: TimelineQuarter = { year: this.selectedStartYear, quarter: this.selectedStartQuarter };
+    const end: TimelineQuarter = { year: this.selectedEndYear, quarter: this.selectedEndQuarter };
+    if (this.compareQuarter(start, end) > 0) {
+      // Keep selection valid by moving end to start when user selects an inverted range.
+      this.selectedEndYear = this.selectedStartYear;
+      this.selectedEndQuarter = this.selectedStartQuarter;
+    }
+    this.timeline = this.buildTimelineFromRange(
+      { year: this.selectedStartYear, quarter: this.selectedStartQuarter },
+      { year: this.selectedEndYear, quarter: this.selectedEndQuarter }
+    );
+    this.timelineYearGroups = this.buildYearGroups(this.timeline);
+  }
+
+  /**
+   * Builds timeline slots between two quarter points, inclusive.
+   */
+  private buildTimelineFromRange(start: TimelineQuarter, end: TimelineQuarter): TimelineSlot[] {
     const slots: TimelineSlot[] = [];
     for (let year = start.year; year <= end.year; year++) {
       const qStart = year === start.year ? start.quarter : 1;
@@ -410,6 +941,72 @@ export class RoadmapViewComponent implements OnInit {
   }
 
   /**
+   * Compares two quarter points.
+   *
+   * @returns negative when a < b, zero when equal, positive when a > b.
+   */
+  private compareQuarter(a: TimelineQuarter, b: TimelineQuarter): number {
+    return (a.year * 10 + a.quarter) - (b.year * 10 + b.quarter);
+  }
+
+  /**
+   * Persists full roadmap configuration and handles success/error flags.
+   *
+   * @param onSuccess Callback invoked when persistence succeeds.
+   * @param onErrorRollback Callback invoked when persistence fails to undo local optimistic update.
+   * @param savingCommitmentOperation Indicates if this save belongs to commitment workflow.
+   */
+  private persistConfig(
+    onSuccess: () => void,
+    onErrorRollback: () => void,
+    savingCommitmentOperation = false
+  ): void {
+    if (!this.config || !this.roadmap?.id) {
+      return;
+    }
+    this.error = '';
+    if (savingCommitmentOperation) {
+      this.savingCommitment = true;
+    } else {
+      this.savingInitiative = true;
+    }
+
+    this.roadmapService.saveConfig(this.roadmap.id, this.config).subscribe({
+      next: () => {
+        if (savingCommitmentOperation) {
+          this.savingCommitment = false;
+        } else {
+          this.savingInitiative = false;
+        }
+        onSuccess();
+      },
+      error: (err) => {
+        if (savingCommitmentOperation) {
+          this.savingCommitment = false;
+        } else {
+          this.savingInitiative = false;
+        }
+        onErrorRollback();
+        this.error = err?.error?.message || 'No se pudo guardar la configuración.';
+      }
+    });
+  }
+
+  /**
+   * Creates an empty commitment draft used in the "Ver/Crear compromisos" panel.
+   */
+  private createEmptyCommitmentDraft(): CommitmentConfig {
+    return {
+      id: '',
+      descripcion: '',
+      fecha_comprometido: '',
+      actor: '',
+      quien_compromete: '',
+      informacion_adicional: {}
+    };
+  }
+
+  /**
    * Normalizes API payload so view and modal logic always receive complete structures.
    */
   private ensureConfigDefaults(config: Partial<RoadmapConfig>): RoadmapConfig {
@@ -421,7 +1018,8 @@ export class RoadmapViewComponent implements OnInit {
         fin: String(config?.horizonte_base?.fin || '')
       },
       ejes_estrategicos: config?.ejes_estrategicos || [],
-      iniciativas: (config?.iniciativas || []).map((initiative: any) => this.normalizeInitiative(initiative))
+      iniciativas: (config?.iniciativas || []).map((initiative: any) => this.normalizeInitiative(initiative)),
+      compromisos: (config?.compromisos || []).map((commitment: any) => this.normalizeCommitment(commitment))
     };
   }
 
@@ -436,6 +1034,7 @@ export class RoadmapViewComponent implements OnInit {
       inicio: String(raw?.inicio || ''),
       fin: String(raw?.fin || ''),
       certeza: String(raw?.certeza || 'planificado'),
+      expedientes: this.normalizeExpedientes(raw),
       dependencias: Array.isArray(raw?.dependencias) ? raw.dependencias : [],
       informacion_adicional: this.normalizeAdditionalInfo(raw)
     };
@@ -459,10 +1058,141 @@ export class RoadmapViewComponent implements OnInit {
 
     this.copyLegacyField(raw, 'tipo', output);
     this.copyLegacyField(raw, 'expediente', output);
+    this.copyLegacyField(raw, 'precio_licitacion', output);
+    this.copyLegacyField(raw, 'precio_adjudicacion', output);
+    this.copyLegacyField(raw, 'empresa', output);
+    this.copyLegacyField(raw, 'fecha_fin_expediente', output);
     this.copyLegacyField(raw, 'objetivo', output);
     this.copyLegacyField(raw, 'impacto_principal', output);
     this.copyLegacyField(raw, 'usuarios_afectados', output);
     return output;
+  }
+
+  /**
+   * Produces one commitment object with guaranteed base fields and additional map.
+   */
+  private normalizeCommitment(raw: any): CommitmentConfig {
+    return {
+      id: String(raw?.id || ''),
+      descripcion: String(raw?.descripcion || ''),
+      fecha_comprometido: String(raw?.fecha_comprometido || ''),
+      actor: String(raw?.actor || ''),
+      quien_compromete: String(raw?.quien_compromete || ''),
+      informacion_adicional: this.normalizeAdditionalInfo(raw)
+    };
+  }
+
+  /**
+   * Normalizes initiative expedientes list and keeps compatibility with legacy keys.
+   */
+  private normalizeExpedientes(raw: any): InitiativeExpediente[] {
+    const output: InitiativeExpediente[] = [];
+    if (Array.isArray(raw?.expedientes)) {
+      for (const item of raw.expedientes) {
+        output.push({
+          tipo: String(item?.tipo || ''),
+          empresa: String(item?.empresa || ''),
+          expediente: String(item?.expediente || ''),
+          impacto: String(item?.impacto || ''),
+          precio_licitacion: String(item?.precio_licitacion || ''),
+          precio_adjudicacion: String(item?.precio_adjudicacion || ''),
+          fecha_fin_expediente: String(item?.fecha_fin_expediente || ''),
+          informacion_adicional: this.normalizeAdditionalInfo(item)
+        });
+      }
+    }
+
+    if (output.length > 0) {
+      return output;
+    }
+
+    const legacyExpediente = String(raw?.expediente || raw?.informacion_adicional?.expediente || '').trim();
+    const legacyEmpresa = String(raw?.empresa || raw?.informacion_adicional?.empresa || '').trim();
+    const legacyLicitacion = String(raw?.precio_licitacion || raw?.informacion_adicional?.precio_licitacion || '').trim();
+    const legacyAdjudicacion = String(raw?.precio_adjudicacion || raw?.informacion_adicional?.precio_adjudicacion || '').trim();
+    const legacyFechaFin = String(raw?.fecha_fin_expediente || raw?.informacion_adicional?.fecha_fin_expediente || '').trim();
+
+    if (!legacyExpediente && !legacyEmpresa && !legacyLicitacion && !legacyAdjudicacion && !legacyFechaFin) {
+      return [];
+    }
+
+    return [{
+      tipo: String(raw?.tipo || raw?.informacion_adicional?.tipo || ''),
+      empresa: legacyEmpresa,
+      expediente: legacyExpediente,
+      impacto: String(raw?.impacto || raw?.impacto_principal || raw?.informacion_adicional?.impacto_principal || ''),
+      precio_licitacion: legacyLicitacion,
+      precio_adjudicacion: legacyAdjudicacion,
+      fecha_fin_expediente: legacyFechaFin,
+      informacion_adicional: {}
+    }];
+  }
+
+  /**
+   * Returns initiative expedientes, creating compatibility rows when needed.
+   */
+  resolveInitiativeExpedientes(initiative: InitiativeConfig): InitiativeExpediente[] {
+    if (Array.isArray(initiative.expedientes) && initiative.expedientes.length > 0) {
+      return initiative.expedientes;
+    }
+    return this.normalizeExpedientes(initiative);
+  }
+
+  /**
+   * Resolves one expediente value from first-class field and falls back to
+   * additional JSON keys used in legacy/imported payloads.
+   */
+  private resolveExpedientePrimaryValue(
+    expediente: InitiativeExpediente,
+    primaryField: keyof InitiativeExpediente,
+    fallbackKeys: string[]
+  ): string {
+    const direct = String(expediente?.[primaryField] ?? '').trim();
+    if (direct) {
+      return direct;
+    }
+    const additional = expediente?.informacion_adicional || {};
+    for (const key of fallbackKeys) {
+      const candidate = String(additional[key] ?? '').trim();
+      if (candidate) {
+        return candidate;
+      }
+    }
+    return '';
+  }
+
+  /**
+   * Checks whether one expedition row has displayable information.
+   */
+  private hasExpedienteContent(row: ExpeditionRow): boolean {
+    if (
+      row.expediente ||
+      row.precioLicitacion ||
+      row.precioAdjudicacion ||
+      row.empresa ||
+      row.fechaFinExpediente ||
+      row.tipo ||
+      row.impacto
+    ) {
+      return true;
+    }
+    return Object.keys(row.informacionAdicional || {}).some((key) => String(row.informacionAdicional[key] || '').trim().length > 0);
+  }
+
+  /**
+   * Creates one empty expediente draft row.
+   */
+  private createEmptyExpediente(): InitiativeExpediente {
+    return {
+      tipo: '',
+      empresa: '',
+      expediente: '',
+      impacto: '',
+      precio_licitacion: '',
+      precio_adjudicacion: '',
+      fecha_fin_expediente: '',
+      informacion_adicional: {}
+    };
   }
 
   private copyLegacyField(raw: any, field: string, output: Record<string, string>): void {

@@ -20,6 +20,8 @@ mvn spring-boot:run
 Para BBDD existentes, ejecuta antes:
 ```bash
 mysql -u roadmap -p roadmap_mvp < Database/migrations/2026-03-25_iniciativas_informacion_adicional.sql
+mysql -u roadmap -p roadmap_mvp < Database/migrations/2026-03-26_iniciativas_expedientes.sql
+mysql -u roadmap -p roadmap_mvp < Database/migrations/2026-03-26_compromisos.sql
 ```
 La conexion MySQL falla de forma controlada si no existe `iniciativas.informacion_adicional`.
 

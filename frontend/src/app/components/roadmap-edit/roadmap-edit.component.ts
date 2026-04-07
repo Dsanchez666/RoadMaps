@@ -3,6 +3,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 
 import {
   AxisConfig,
+  CommitmentConfig,
+  InitiativeExpediente,
   InitiativeConfig,
   Roadmap,
   RoadmapConfig,
@@ -24,7 +26,17 @@ import { ConnectionStateService } from '../../services/connection-state.service'
 export class RoadmapEditComponent implements OnInit {
   roadmap: Roadmap | null = null;
   config: RoadmapConfig | null = null;
-  readonly suggestedAdditionalKeys = ['tipo', 'expediente', 'objetivo', 'impacto_principal', 'usuarios_afectados'];
+  readonly suggestedAdditionalKeys = [
+    'tipo',
+    'expediente',
+    'precio_licitacion',
+    'precio_adjudicacion',
+    'empresa',
+    'fecha_fin_expediente',
+    'objetivo',
+    'impacto_principal',
+    'usuarios_afectados'
+  ];
   loading = false;
   saving = false;
   error = '';
@@ -121,6 +133,7 @@ export class RoadmapEditComponent implements OnInit {
       fin: this.config.horizonte_base.fin || '',
       certeza: 'planificado',
       informacion_adicional: {},
+      expedientes: [],
       dependencias: []
     };
     this.config.iniciativas.push(iniciativa);
@@ -324,7 +337,15 @@ export class RoadmapEditComponent implements OnInit {
         descripcion: String(eje?.descripcion || ''),
         color: String(eje?.color || '#1976D2')
       })),
-      iniciativas: (config?.iniciativas || []).map((initiative: any) => this.normalizeInitiative(initiative))
+      iniciativas: (config?.iniciativas || []).map((initiative: any) => this.normalizeInitiative(initiative)),
+      compromisos: (config?.compromisos || []).map((commitment: CommitmentConfig) => ({
+        id: String(commitment?.id || ''),
+        descripcion: String(commitment?.descripcion || ''),
+        fecha_comprometido: String(commitment?.fecha_comprometido || ''),
+        actor: String(commitment?.actor || ''),
+        quien_compromete: String(commitment?.quien_compromete || ''),
+        informacion_adicional: this.normalizeAdditionalInfo(commitment)
+      }))
     };
   }
 
@@ -339,6 +360,7 @@ export class RoadmapEditComponent implements OnInit {
       inicio: String(raw?.inicio || ''),
       fin: String(raw?.fin || ''),
       certeza: String(raw?.certeza || 'planificado'),
+      expedientes: this.normalizeExpedientes(raw),
       dependencias: Array.isArray(raw?.dependencias) ? raw.dependencias : [],
       informacion_adicional: this.normalizeAdditionalInfo(raw)
     };
@@ -363,10 +385,60 @@ export class RoadmapEditComponent implements OnInit {
     // Backward compatibility for payloads still exposing fixed fields.
     this.copyLegacyField(raw, 'tipo', output);
     this.copyLegacyField(raw, 'expediente', output);
+    this.copyLegacyField(raw, 'precio_licitacion', output);
+    this.copyLegacyField(raw, 'precio_adjudicacion', output);
+    this.copyLegacyField(raw, 'empresa', output);
+    this.copyLegacyField(raw, 'fecha_fin_expediente', output);
     this.copyLegacyField(raw, 'objetivo', output);
     this.copyLegacyField(raw, 'impacto_principal', output);
     this.copyLegacyField(raw, 'usuarios_afectados', output);
     return output;
+  }
+
+  /**
+   * Normalizes expedientes list from payload and keeps compatibility with legacy keys.
+   */
+  private normalizeExpedientes(raw: any): InitiativeExpediente[] {
+    const output: InitiativeExpediente[] = [];
+    if (Array.isArray(raw?.expedientes)) {
+      for (const item of raw.expedientes) {
+        output.push({
+          tipo: String(item?.tipo || ''),
+          empresa: String(item?.empresa || ''),
+          expediente: String(item?.expediente || ''),
+          impacto: String(item?.impacto || ''),
+          precio_licitacion: String(item?.precio_licitacion || ''),
+          precio_adjudicacion: String(item?.precio_adjudicacion || ''),
+          fecha_fin_expediente: String(item?.fecha_fin_expediente || ''),
+          informacion_adicional: this.normalizeAdditionalInfo(item)
+        });
+      }
+    }
+
+    if (output.length > 0) {
+      return output;
+    }
+
+    const legacyExpediente = String(raw?.expediente || raw?.informacion_adicional?.expediente || '').trim();
+    const legacyEmpresa = String(raw?.empresa || raw?.informacion_adicional?.empresa || '').trim();
+    const legacyLicitacion = String(raw?.precio_licitacion || raw?.informacion_adicional?.precio_licitacion || '').trim();
+    const legacyAdjudicacion = String(raw?.precio_adjudicacion || raw?.informacion_adicional?.precio_adjudicacion || '').trim();
+    const legacyFechaFin = String(raw?.fecha_fin_expediente || raw?.informacion_adicional?.fecha_fin_expediente || '').trim();
+
+    if (!legacyExpediente && !legacyEmpresa && !legacyLicitacion && !legacyAdjudicacion && !legacyFechaFin) {
+      return [];
+    }
+
+    return [{
+      tipo: String(raw?.tipo || raw?.informacion_adicional?.tipo || ''),
+      empresa: legacyEmpresa,
+      expediente: legacyExpediente,
+      impacto: String(raw?.impacto || raw?.impacto_principal || raw?.informacion_adicional?.impacto_principal || ''),
+      precio_licitacion: legacyLicitacion,
+      precio_adjudicacion: legacyAdjudicacion,
+      fecha_fin_expediente: legacyFechaFin,
+      informacion_adicional: {}
+    }];
   }
 
   private copyLegacyField(raw: any, field: string, output: Record<string, string>): void {
