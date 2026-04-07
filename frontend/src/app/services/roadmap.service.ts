@@ -24,6 +24,18 @@ export interface InitiativeDependency {
   tipo: string;
 }
 
+/** Expediente item associated with one initiative. */
+export interface InitiativeExpediente {
+  tipo: string;
+  empresa: string;
+  expediente: string;
+  impacto: string;
+  precio_licitacion: string;
+  precio_adjudicacion: string;
+  fecha_fin_expediente: string;
+  informacion_adicional: Record<string, string>;
+}
+
 /** Initiative definition used in roadmap editing UI. */
 export interface InitiativeConfig {
   id: string;
@@ -33,10 +45,21 @@ export interface InitiativeConfig {
   fin: string;
   certeza: string;
   informacion_adicional: Record<string, string>;
+  expedientes: InitiativeExpediente[];
   dependencias: InitiativeDependency[];
 }
 
-/** Full editable roadmap configuration persisted in local storage. */
+/** Commitment definition used in roadmap visualization UI. */
+export interface CommitmentConfig {
+  id: string;
+  descripcion: string;
+  fecha_comprometido: string;
+  actor: string;
+  quien_compromete: string;
+  informacion_adicional: Record<string, string>;
+}
+
+/** Full editable roadmap configuration persisted in backend storage. */
 export interface RoadmapConfig {
   producto: string;
   organizacion: string;
@@ -46,6 +69,7 @@ export interface RoadmapConfig {
   };
   ejes_estrategicos: AxisConfig[];
   iniciativas: InitiativeConfig[];
+  compromisos: CommitmentConfig[];
 }
 
 /** Full payload accepted by roadmap JSON import endpoint. */
@@ -60,6 +84,7 @@ export interface RoadmapImportPayload {
   };
   ejes_estrategicos?: AxisConfig[];
   iniciativas?: InitiativeConfig[];
+  compromisos?: CommitmentConfig[];
 }
 
 /**

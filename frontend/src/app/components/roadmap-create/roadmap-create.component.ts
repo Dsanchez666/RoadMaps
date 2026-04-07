@@ -183,7 +183,8 @@ export class RoadmapCreateComponent {
         fin: String(raw?.horizonte_base?.fin || '')
       },
       ejes_estrategicos: Array.isArray(raw?.ejes_estrategicos) ? raw.ejes_estrategicos : [],
-      iniciativas: Array.isArray(raw?.iniciativas) ? raw.iniciativas : []
+      iniciativas: Array.isArray(raw?.iniciativas) ? raw.iniciativas : [],
+      compromisos: Array.isArray(raw?.compromisos) ? raw.compromisos : []
     };
   }
 }
