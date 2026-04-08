@@ -28,8 +28,11 @@ interface TimelineQuarter {
 }
 
 interface ExpeditionRow {
+  expedienteId: string;
   initiativeId: string;
   initiativeName: string;
+  initiativeIds: string[];
+  initiativeNames: string[];
   initiativeExpeditionIndex: number;
   tipo: string;
   expediente: string;
@@ -39,6 +42,13 @@ interface ExpeditionRow {
   empresa: string;
   fechaFinExpediente: string;
   informacionAdicional: Record<string, string>;
+}
+
+interface ExpeditionSummary {
+  totalLicitacion: number;
+  totalAdjudicacion: number;
+  averageDiscount: number;
+  discountCount: number;
 }
 
 type InitiativeModalTab = 'general' | 'expedientes' | 'adicional';
@@ -96,6 +106,10 @@ export class RoadmapViewComponent implements OnInit {
   expeditionSearch = '';
   commitmentSearch = '';
   commitmentDraft: CommitmentConfig = this.createEmptyCommitmentDraft();
+  showLinkExpedienteSelector = false;
+  linkExpedienteSearch = '';
+  expedientesPanelWidth = 760;
+  expeditionContextInitiativeIds: string[] = [];
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -229,6 +243,9 @@ export class RoadmapViewComponent implements OnInit {
       .map((d) => d.iniciativa)
       .filter((v) => !!v)
       .join(', ');
+    this.showLinkExpedienteSelector = false;
+    this.linkExpedienteSearch = '';
+    this.expeditionContextInitiativeIds = [];
     this.initiativeModalOpen = true;
   }
 
@@ -238,6 +255,9 @@ export class RoadmapViewComponent implements OnInit {
     this.editingInitiativeId = '';
     this.dependenciesInput = '';
     this.activeInitiativeTab = 'general';
+    this.showLinkExpedienteSelector = false;
+    this.linkExpedienteSearch = '';
+    this.expeditionContextInitiativeIds = [];
   }
 
   setInitiativeTab(tab: InitiativeModalTab): void {
@@ -321,6 +341,9 @@ export class RoadmapViewComponent implements OnInit {
    */
   openExpedientesPanel(): void {
     this.activePanel = this.activePanel === 'expedientes' ? 'none' : 'expedientes';
+    if (this.activePanel === 'expedientes') {
+      this.clampExpedientesPanelWidth();
+    }
   }
 
   /**
@@ -338,6 +361,16 @@ export class RoadmapViewComponent implements OnInit {
     this.showCommitmentForm = false;
   }
 
+  setExpedientesPanelWidth(value: number): void {
+    this.expedientesPanelWidth = Number.isFinite(value) ? value : this.expedientesPanelWidth;
+    this.clampExpedientesPanelWidth();
+  }
+
+  expedientesPanelMaxWidth(): number {
+    const viewport = typeof window !== 'undefined' ? window.innerWidth : 1600;
+    return Math.max(560, Math.floor(viewport * 0.85));
+  }
+
   /**
    * Returns initiatives containing expedition data.
    */
@@ -346,14 +379,17 @@ export class RoadmapViewComponent implements OnInit {
       return [];
     }
 
-    const rows: ExpeditionRow[] = [];
+    const rowsByExpediente = new Map<string, ExpeditionRow>();
     for (const initiative of this.config.iniciativas) {
       const expedientes = this.resolveInitiativeExpedientes(initiative);
       for (let index = 0; index < expedientes.length; index++) {
         const expediente = expedientes[index];
         const row: ExpeditionRow = {
+          expedienteId: expediente.id,
           initiativeId: initiative.id,
           initiativeName: initiative.nombre,
+          initiativeIds: [initiative.id],
+          initiativeNames: [initiative.nombre],
           initiativeExpeditionIndex: index,
           tipo: this.resolveExpedientePrimaryValue(expediente, 'tipo', ['tipo']),
           expediente: this.resolveExpedientePrimaryValue(expediente, 'expediente', ['expediente']),
@@ -364,12 +400,26 @@ export class RoadmapViewComponent implements OnInit {
           fechaFinExpediente: this.resolveExpedientePrimaryValue(expediente, 'fecha_fin_expediente', ['fecha_fin_expediente']),
           informacionAdicional: { ...(expediente.informacion_adicional || {}) }
         };
-        if (this.hasExpedienteContent(row)) {
-          rows.push(row);
+        if (!this.hasExpedienteContent(row)) {
+          continue;
+        }
+
+        const key = this.buildExpeditionAggregationKey(row);
+        const existing = rowsByExpediente.get(key);
+        if (!existing) {
+          rowsByExpediente.set(key, row);
+          continue;
+        }
+
+        if (!existing.initiativeIds.includes(initiative.id)) {
+          existing.initiativeIds.push(initiative.id);
+        }
+        if (!existing.initiativeNames.includes(initiative.nombre)) {
+          existing.initiativeNames.push(initiative.nombre);
         }
       }
     }
-    return rows;
+    return Array.from(rowsByExpediente.values());
   }
 
   filteredExpeditionRows(): ExpeditionRow[] {
@@ -382,6 +432,8 @@ export class RoadmapViewComponent implements OnInit {
       const values = [
         row.initiativeId,
         row.initiativeName,
+        ...row.initiativeIds,
+        ...row.initiativeNames,
         row.tipo,
         row.expediente,
         row.impacto,
@@ -395,6 +447,93 @@ export class RoadmapViewComponent implements OnInit {
     });
   }
 
+  expeditionSummary(): ExpeditionSummary {
+    const rows = this.filteredExpeditionRows();
+    let totalLicitacion = 0;
+    let totalAdjudicacion = 0;
+    let totalDiscount = 0;
+    let discountCount = 0;
+
+    for (const row of rows) {
+      const licitacion = this.parseAmount(row.precioLicitacion);
+      const adjudicacion = this.parseAmount(row.precioAdjudicacion);
+      totalLicitacion += licitacion;
+      totalAdjudicacion += adjudicacion;
+
+      const discount = this.calculateDiscount(row.precioLicitacion, row.precioAdjudicacion);
+      if (discount !== null) {
+        totalDiscount += discount;
+        discountCount += 1;
+      }
+    }
+
+    return {
+      totalLicitacion,
+      totalAdjudicacion,
+      averageDiscount: discountCount > 0 ? totalDiscount / discountCount : 0,
+      discountCount
+    };
+  }
+
+  expeditionDiscountLabel(row: ExpeditionRow): string {
+    const discount = this.calculateDiscount(row.precioLicitacion, row.precioAdjudicacion);
+    if (discount === null) {
+      return '-';
+    }
+    return `${discount.toFixed(1)}%`;
+  }
+
+  initiativesLabel(row: ExpeditionRow): string {
+    return (row.initiativeNames || []).join(', ');
+  }
+
+  expedientesCatalogoDisponibles(): InitiativeExpediente[] {
+    if (!this.config || !this.initiativeDraft) {
+      return [];
+    }
+
+    const filter = this.linkExpedienteSearch.trim().toLowerCase();
+    const linkedIds = new Set(this.draftExpedientes().map((item) => item.id).filter((id) => !!id));
+    return (this.config.expedientes_catalogo || [])
+      .filter((expediente) => !linkedIds.has(expediente.id))
+      .filter((expediente) => {
+        if (!filter) {
+          return true;
+        }
+        const values = [
+          expediente.expediente,
+          expediente.empresa,
+          expediente.tipo,
+          expediente.precio_licitacion,
+          expediente.precio_adjudicacion,
+          expediente.fecha_fin_expediente
+        ];
+        return values.some((value) => String(value || '').toLowerCase().includes(filter));
+      });
+  }
+
+  toggleLinkExpedienteSelector(): void {
+    this.showLinkExpedienteSelector = !this.showLinkExpedienteSelector;
+    if (!this.showLinkExpedienteSelector) {
+      this.linkExpedienteSearch = '';
+    }
+  }
+
+  linkExistingExpediente(expediente: InitiativeExpediente): void {
+    if (!this.initiativeDraft) {
+      return;
+    }
+
+    const alreadyLinked = this.draftExpedientes().some((item) => item.id === expediente.id);
+    if (alreadyLinked) {
+      return;
+    }
+
+    this.draftExpedientes().push(this.cloneExpediente(expediente));
+    this.showLinkExpedienteSelector = false;
+    this.linkExpedienteSearch = '';
+  }
+
   /**
    * Opens the initiative modal for one expedition row.
    */
@@ -402,11 +541,26 @@ export class RoadmapViewComponent implements OnInit {
     if (!this.config) {
       return;
     }
-    const initiative = this.config.iniciativas.find((item) => item.id === row.initiativeId);
-    if (!initiative) {
+    const availableIds = (row.initiativeIds || []).filter((id) => !!id);
+    if (availableIds.length === 0) {
       return;
     }
-    this.openInitiativeModal(initiative);
+    this.expeditionContextInitiativeIds = availableIds;
+    this.openInitiativeModalById(availableIds[0]);
+  }
+
+  expeditionContextInitiatives(): InitiativeConfig[] {
+    if (!this.config || this.expeditionContextInitiativeIds.length === 0) {
+      return [];
+    }
+    const byId = new Map(this.config.iniciativas.map((initiative) => [initiative.id, initiative]));
+    return this.expeditionContextInitiativeIds
+      .map((id) => byId.get(id))
+      .filter((initiative): initiative is InitiativeConfig => !!initiative);
+  }
+
+  switchExpeditionContextInitiative(initiativeId: string): void {
+    this.openInitiativeModalById(initiativeId);
   }
 
   /**
@@ -1019,8 +1173,32 @@ export class RoadmapViewComponent implements OnInit {
       },
       ejes_estrategicos: config?.ejes_estrategicos || [],
       iniciativas: (config?.iniciativas || []).map((initiative: any) => this.normalizeInitiative(initiative)),
+      expedientes_catalogo: (config?.expedientes_catalogo || []).map((item: any) => this.normalizeSingleExpediente(item)),
       compromisos: (config?.compromisos || []).map((commitment: any) => this.normalizeCommitment(commitment))
     };
+  }
+
+  private openInitiativeModalById(initiativeId: string): void {
+    if (!this.config) {
+      return;
+    }
+    const initiative = this.config.iniciativas.find((item) => item.id === initiativeId);
+    if (!initiative) {
+      return;
+    }
+
+    this.saveMessage = '';
+    this.error = '';
+    this.editingInitiativeId = initiative.id;
+    this.initiativeDraft = this.normalizeInitiative(JSON.parse(JSON.stringify(initiative)));
+    this.activeInitiativeTab = 'general';
+    this.dependenciesInput = (initiative.dependencias || [])
+      .map((d) => d.iniciativa)
+      .filter((v) => !!v)
+      .join(', ');
+    this.showLinkExpedienteSelector = false;
+    this.linkExpedienteSearch = '';
+    this.initiativeModalOpen = true;
   }
 
   /**
@@ -1089,16 +1267,7 @@ export class RoadmapViewComponent implements OnInit {
     const output: InitiativeExpediente[] = [];
     if (Array.isArray(raw?.expedientes)) {
       for (const item of raw.expedientes) {
-        output.push({
-          tipo: String(item?.tipo || ''),
-          empresa: String(item?.empresa || ''),
-          expediente: String(item?.expediente || ''),
-          impacto: String(item?.impacto || ''),
-          precio_licitacion: String(item?.precio_licitacion || ''),
-          precio_adjudicacion: String(item?.precio_adjudicacion || ''),
-          fecha_fin_expediente: String(item?.fecha_fin_expediente || ''),
-          informacion_adicional: this.normalizeAdditionalInfo(item)
-        });
+        output.push(this.normalizeSingleExpediente(item));
       }
     }
 
@@ -1117,6 +1286,16 @@ export class RoadmapViewComponent implements OnInit {
     }
 
     return [{
+      id: this.buildExpedienteId({
+        tipo: String(raw?.tipo || raw?.informacion_adicional?.tipo || ''),
+        empresa: legacyEmpresa,
+        expediente: legacyExpediente,
+        impacto: String(raw?.impacto || raw?.impacto_principal || raw?.informacion_adicional?.impacto_principal || ''),
+        precio_licitacion: legacyLicitacion,
+        precio_adjudicacion: legacyAdjudicacion,
+        fecha_fin_expediente: legacyFechaFin,
+        informacion_adicional: {}
+      }),
       tipo: String(raw?.tipo || raw?.informacion_adicional?.tipo || ''),
       empresa: legacyEmpresa,
       expediente: legacyExpediente,
@@ -1184,6 +1363,7 @@ export class RoadmapViewComponent implements OnInit {
    */
   private createEmptyExpediente(): InitiativeExpediente {
     return {
+      id: `EXP-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       tipo: '',
       empresa: '',
       expediente: '',
@@ -1195,6 +1375,85 @@ export class RoadmapViewComponent implements OnInit {
     };
   }
 
+  private buildExpeditionAggregationKey(row: ExpeditionRow): string {
+    if (row.expedienteId) {
+      return `id:${row.expedienteId}`;
+    }
+    return [
+      row.expediente,
+      row.empresa,
+      row.tipo,
+      row.precioLicitacion,
+      row.precioAdjudicacion,
+      row.fechaFinExpediente
+    ]
+      .map((value) => String(value || '').trim().toLowerCase())
+      .join('|');
+  }
+
+  private normalizeSingleExpediente(raw: any): InitiativeExpediente {
+    const normalized: InitiativeExpediente = {
+      id: String(raw?.id || ''),
+      tipo: String(raw?.tipo || ''),
+      empresa: String(raw?.empresa || ''),
+      expediente: String(raw?.expediente || ''),
+      impacto: String(raw?.impacto || ''),
+      precio_licitacion: String(raw?.precio_licitacion || ''),
+      precio_adjudicacion: String(raw?.precio_adjudicacion || ''),
+      fecha_fin_expediente: String(raw?.fecha_fin_expediente || ''),
+      informacion_adicional: this.normalizeAdditionalInfo(raw)
+    };
+    if (!normalized.id) {
+      normalized.id = this.buildExpedienteId(normalized);
+    }
+    return normalized;
+  }
+
+  private cloneExpediente(expediente: InitiativeExpediente): InitiativeExpediente {
+    return {
+      id: String(expediente.id || this.buildExpedienteId(expediente)),
+      tipo: String(expediente.tipo || ''),
+      empresa: String(expediente.empresa || ''),
+      expediente: String(expediente.expediente || ''),
+      impacto: String(expediente.impacto || ''),
+      precio_licitacion: String(expediente.precio_licitacion || ''),
+      precio_adjudicacion: String(expediente.precio_adjudicacion || ''),
+      fecha_fin_expediente: String(expediente.fecha_fin_expediente || ''),
+      informacion_adicional: { ...(expediente.informacion_adicional || {}) }
+    };
+  }
+
+  private buildExpedienteId(expediente: Partial<InitiativeExpediente>): string {
+    const raw = [
+      expediente.tipo || '',
+      expediente.empresa || '',
+      expediente.expediente || '',
+      expediente.impacto || '',
+      expediente.precio_licitacion || '',
+      expediente.precio_adjudicacion || '',
+      expediente.fecha_fin_expediente || ''
+    ]
+      .join('|')
+      .toLowerCase()
+      .replace(/\s+/g, '-');
+    return `EXP-${btoa(unescape(encodeURIComponent(raw || Date.now().toString()))).replace(/[^a-zA-Z0-9]/g, '').slice(0, 18)}`;
+  }
+
+  private parseAmount(value: string): number {
+    const normalized = String(value || '').trim().replace(/\./g, '').replace(',', '.').replace(/[^\d.-]/g, '');
+    const amount = Number(normalized);
+    return Number.isFinite(amount) ? amount : 0;
+  }
+
+  private calculateDiscount(precioLicitacion: string, precioAdjudicacion: string): number | null {
+    const licitacion = this.parseAmount(precioLicitacion);
+    const adjudicacion = this.parseAmount(precioAdjudicacion);
+    if (!licitacion || licitacion <= 0) {
+      return null;
+    }
+    return ((licitacion - adjudicacion) / licitacion) * 100;
+  }
+
   private copyLegacyField(raw: any, field: string, output: Record<string, string>): void {
     const value = raw?.[field];
     if (value == null || String(value).trim().length === 0) {
@@ -1203,5 +1462,12 @@ export class RoadmapViewComponent implements OnInit {
     if (!Object.prototype.hasOwnProperty.call(output, field)) {
       output[field] = String(value);
     }
+  }
+
+  private clampExpedientesPanelWidth(): void {
+    const viewport = typeof window !== 'undefined' ? window.innerWidth : 1440;
+    const minWidth = 560;
+    const maxWidth = Math.max(minWidth, Math.floor(viewport * 0.85));
+    this.expedientesPanelWidth = Math.max(minWidth, Math.min(maxWidth, this.expedientesPanelWidth));
   }
 }

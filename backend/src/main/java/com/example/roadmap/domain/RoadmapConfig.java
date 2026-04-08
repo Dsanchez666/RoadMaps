@@ -16,6 +16,7 @@ public class RoadmapConfig {
     private RoadmapHorizon horizonte_base;
     private List<StrategicAxis> ejes_estrategicos = new ArrayList<>();
     private List<Initiative> iniciativas = new ArrayList<>();
+    private List<InitiativeExpediente> expedientes_catalogo = new ArrayList<>();
     private List<RoadmapCommitment> compromisos = new ArrayList<>();
 
     public RoadmapConfig() {
@@ -59,6 +60,14 @@ public class RoadmapConfig {
 
     public void setIniciativas(List<Initiative> iniciativas) {
         this.iniciativas = iniciativas;
+    }
+
+    public List<InitiativeExpediente> getExpedientes_catalogo() {
+        return expedientes_catalogo;
+    }
+
+    public void setExpedientes_catalogo(List<InitiativeExpediente> expedientes_catalogo) {
+        this.expedientes_catalogo = expedientes_catalogo;
     }
 
     public List<RoadmapCommitment> getCompromisos() {

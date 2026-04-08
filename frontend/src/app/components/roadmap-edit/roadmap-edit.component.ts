@@ -338,6 +338,7 @@ export class RoadmapEditComponent implements OnInit {
         color: String(eje?.color || '#1976D2')
       })),
       iniciativas: (config?.iniciativas || []).map((initiative: any) => this.normalizeInitiative(initiative)),
+      expedientes_catalogo: (config?.expedientes_catalogo || []).map((expediente: any) => this.normalizeSingleExpediente(expediente)),
       compromisos: (config?.compromisos || []).map((commitment: CommitmentConfig) => ({
         id: String(commitment?.id || ''),
         descripcion: String(commitment?.descripcion || ''),
@@ -402,16 +403,7 @@ export class RoadmapEditComponent implements OnInit {
     const output: InitiativeExpediente[] = [];
     if (Array.isArray(raw?.expedientes)) {
       for (const item of raw.expedientes) {
-        output.push({
-          tipo: String(item?.tipo || ''),
-          empresa: String(item?.empresa || ''),
-          expediente: String(item?.expediente || ''),
-          impacto: String(item?.impacto || ''),
-          precio_licitacion: String(item?.precio_licitacion || ''),
-          precio_adjudicacion: String(item?.precio_adjudicacion || ''),
-          fecha_fin_expediente: String(item?.fecha_fin_expediente || ''),
-          informacion_adicional: this.normalizeAdditionalInfo(item)
-        });
+        output.push(this.normalizeSingleExpediente(item));
       }
     }
 
@@ -430,6 +422,16 @@ export class RoadmapEditComponent implements OnInit {
     }
 
     return [{
+      id: this.buildExpedienteId({
+        tipo: String(raw?.tipo || raw?.informacion_adicional?.tipo || ''),
+        empresa: legacyEmpresa,
+        expediente: legacyExpediente,
+        impacto: String(raw?.impacto || raw?.impacto_principal || raw?.informacion_adicional?.impacto_principal || ''),
+        precio_licitacion: legacyLicitacion,
+        precio_adjudicacion: legacyAdjudicacion,
+        fecha_fin_expediente: legacyFechaFin,
+        informacion_adicional: {}
+      }),
       tipo: String(raw?.tipo || raw?.informacion_adicional?.tipo || ''),
       empresa: legacyEmpresa,
       expediente: legacyExpediente,
@@ -439,6 +441,40 @@ export class RoadmapEditComponent implements OnInit {
       fecha_fin_expediente: legacyFechaFin,
       informacion_adicional: {}
     }];
+  }
+
+  private normalizeSingleExpediente(raw: any): InitiativeExpediente {
+    const normalized: InitiativeExpediente = {
+      id: String(raw?.id || ''),
+      tipo: String(raw?.tipo || ''),
+      empresa: String(raw?.empresa || ''),
+      expediente: String(raw?.expediente || ''),
+      impacto: String(raw?.impacto || ''),
+      precio_licitacion: String(raw?.precio_licitacion || ''),
+      precio_adjudicacion: String(raw?.precio_adjudicacion || ''),
+      fecha_fin_expediente: String(raw?.fecha_fin_expediente || ''),
+      informacion_adicional: this.normalizeAdditionalInfo(raw)
+    };
+    if (!normalized.id) {
+      normalized.id = this.buildExpedienteId(normalized);
+    }
+    return normalized;
+  }
+
+  private buildExpedienteId(expediente: Partial<InitiativeExpediente>): string {
+    const raw = [
+      expediente.tipo || '',
+      expediente.empresa || '',
+      expediente.expediente || '',
+      expediente.impacto || '',
+      expediente.precio_licitacion || '',
+      expediente.precio_adjudicacion || '',
+      expediente.fecha_fin_expediente || ''
+    ]
+      .join('|')
+      .toLowerCase()
+      .replace(/\s+/g, '-');
+    return `EXP-${btoa(unescape(encodeURIComponent(raw || Date.now().toString()))).replace(/[^a-zA-Z0-9]/g, '').slice(0, 18)}`;
   }
 
   private copyLegacyField(raw: any, field: string, output: Record<string, string>): void {
