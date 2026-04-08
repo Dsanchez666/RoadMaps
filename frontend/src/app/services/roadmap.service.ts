@@ -26,6 +26,7 @@ export interface InitiativeDependency {
 
 /** Expediente item associated with one initiative. */
 export interface InitiativeExpediente {
+  id: string;
   tipo: string;
   empresa: string;
   expediente: string;
@@ -69,6 +70,7 @@ export interface RoadmapConfig {
   };
   ejes_estrategicos: AxisConfig[];
   iniciativas: InitiativeConfig[];
+  expedientes_catalogo: InitiativeExpediente[];
   compromisos: CommitmentConfig[];
 }
 
@@ -84,6 +86,7 @@ export interface RoadmapImportPayload {
   };
   ejes_estrategicos?: AxisConfig[];
   iniciativas?: InitiativeConfig[];
+  expedientes_catalogo?: InitiativeExpediente[];
   compromisos?: CommitmentConfig[];
 }
 

@@ -14,6 +14,7 @@ import java.util.Map;
  * @since 1.1
  */
 public class InitiativeExpediente {
+    private String id;
     private String tipo;
     private String empresa;
     private String expediente;
@@ -24,6 +25,14 @@ public class InitiativeExpediente {
     private Map<String, String> informacion_adicional = new LinkedHashMap<>();
 
     public InitiativeExpediente() {
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getTipo() {

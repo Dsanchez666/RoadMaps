@@ -94,6 +94,38 @@ public final class MySqlSchemaInitializer {
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
                 """);
 
+            st.execute("""
+                CREATE TABLE IF NOT EXISTS expedientes (
+                    id VARCHAR(50) PRIMARY KEY,
+                    tipo VARCHAR(255),
+                    empresa VARCHAR(255),
+                    expediente VARCHAR(255),
+                    impacto VARCHAR(255),
+                    precio_licitacion VARCHAR(255),
+                    precio_adjudicacion VARCHAR(255),
+                    fecha_fin_expediente VARCHAR(20),
+                    informacion_adicional JSON,
+                    huella_negocio VARCHAR(512),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    INDEX idx_expedientes_huella (huella_negocio),
+                    INDEX idx_expedientes_codigo (expediente)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                """);
+
+            st.execute("""
+                CREATE TABLE IF NOT EXISTS iniciativa_expediente (
+                    iniciativa_id VARCHAR(50) NOT NULL,
+                    expediente_id VARCHAR(50) NOT NULL,
+                    posicion INT DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (iniciativa_id, expediente_id),
+                    FOREIGN KEY (iniciativa_id) REFERENCES iniciativas(id) ON DELETE CASCADE,
+                    FOREIGN KEY (expediente_id) REFERENCES expedientes(id) ON DELETE CASCADE,
+                    INDEX idx_iniciativa_expediente_expediente (expediente_id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                """);
+
             Set<String> missingIniciativas = findMissingColumns(
                 connection,
                 "iniciativas",
@@ -113,6 +145,29 @@ public final class MySqlSchemaInitializer {
             if (!missingCompromisos.isEmpty()) {
                 return "Esquema de compromisos desactualizado. Faltan columnas: "
                     + String.join(", ", missingCompromisos)
+                    + ". Ejecuta migración SQL en Database/migrations antes de continuar.";
+            }
+
+            Set<String> missingExpedientes = findMissingColumns(
+                connection,
+                "expedientes",
+                Set.of("id", "tipo", "empresa", "expediente", "impacto", "precio_licitacion", "precio_adjudicacion",
+                    "fecha_fin_expediente", "informacion_adicional", "huella_negocio")
+            );
+            if (!missingExpedientes.isEmpty()) {
+                return "Esquema de expedientes desactualizado. Faltan columnas: "
+                    + String.join(", ", missingExpedientes)
+                    + ". Ejecuta migración SQL en Database/migrations antes de continuar.";
+            }
+
+            Set<String> missingIniciativaExpediente = findMissingColumns(
+                connection,
+                "iniciativa_expediente",
+                Set.of("iniciativa_id", "expediente_id", "posicion")
+            );
+            if (!missingIniciativaExpediente.isEmpty()) {
+                return "Esquema de enlaces iniciativa-expediente desactualizado. Faltan columnas: "
+                    + String.join(", ", missingIniciativaExpediente)
                     + ". Ejecuta migración SQL en Database/migrations antes de continuar.";
             }
             return null;

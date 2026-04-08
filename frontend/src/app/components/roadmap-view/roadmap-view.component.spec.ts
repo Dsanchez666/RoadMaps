@@ -32,6 +32,7 @@ describe('RoadmapViewComponent', () => {
       horizonte_base: { inicio: '2026-T1', fin: '2030-T4' },
       ejes_estrategicos: [],
       iniciativas: [],
+      expedientes_catalogo: [],
       compromisos: []
     }));
     roadmapServiceSpy.saveConfig.and.returnValue(of(void 0));
@@ -80,6 +81,7 @@ describe('RoadmapViewComponent', () => {
           informacion_adicional: {},
           expedientes: [
             {
+              id: 'EXP-1',
               tipo: 'licitacion',
               empresa: 'Empresa A',
               expediente: 'DNA-100',
@@ -107,6 +109,7 @@ describe('RoadmapViewComponent', () => {
           expedientes: []
         }
       ],
+      expedientes_catalogo: [],
       compromisos: []
     };
 
@@ -127,6 +130,7 @@ describe('RoadmapViewComponent', () => {
       horizonte_base: { inicio: '2026-T1', fin: '2030-T4' },
       ejes_estrategicos: [],
       iniciativas: [],
+      expedientes_catalogo: [],
       compromisos: []
     };
     component.commitmentDraft = {
@@ -144,5 +148,100 @@ describe('RoadmapViewComponent', () => {
     expect(component.commitments().length).toBe(1);
     expect(component.commitments()[0].descripcion).toBe('Compromiso de ejemplo');
     expect(component.showCommitmentForm).toBeFalse();
+  });
+
+  it('should calculate expedition totals from filtered rows', () => {
+    component.config = {
+      producto: 'ETNA',
+      organizacion: 'ENAIRE',
+      horizonte_base: { inicio: '2026-T1', fin: '2030-T4' },
+      ejes_estrategicos: [],
+      iniciativas: [
+        {
+          id: 'I1',
+          nombre: 'Iniciativa 1',
+          eje: 'E1',
+          inicio: '2026-T1',
+          fin: '2026-T2',
+          certeza: 'planificado',
+          dependencias: [],
+          informacion_adicional: {},
+          expedientes: [
+            {
+              id: 'EXP-1',
+              tipo: '',
+              empresa: '',
+              expediente: 'DNA-100',
+              impacto: '',
+              precio_licitacion: '1000',
+              precio_adjudicacion: '800',
+              fecha_fin_expediente: '',
+              informacion_adicional: {}
+            },
+            {
+              id: 'EXP-2',
+              tipo: '',
+              empresa: '',
+              expediente: 'DNA-200',
+              impacto: '',
+              precio_licitacion: '2000',
+              precio_adjudicacion: '1500',
+              fecha_fin_expediente: '',
+              informacion_adicional: {}
+            }
+          ]
+        }
+      ],
+      expedientes_catalogo: [],
+      compromisos: []
+    };
+
+    component.expeditionSearch = 'DNA-100';
+    const summary = component.expeditionSummary();
+
+    expect(summary.totalLicitacion).toBe(1000);
+    expect(summary.totalAdjudicacion).toBe(800);
+    expect(summary.averageDiscount).toBeCloseTo(20, 3);
+  });
+
+  it('should link one existing expediente only once', () => {
+    component.config = {
+      producto: 'ETNA',
+      organizacion: 'ENAIRE',
+      horizonte_base: { inicio: '2026-T1', fin: '2030-T4' },
+      ejes_estrategicos: [],
+      iniciativas: [],
+      expedientes_catalogo: [
+        {
+          id: 'EXP-1',
+          tipo: 'licitacion',
+          empresa: 'Empresa A',
+          expediente: 'DNA-100',
+          impacto: '',
+          precio_licitacion: '1000',
+          precio_adjudicacion: '900',
+          fecha_fin_expediente: '2026-10-10',
+          informacion_adicional: {}
+        }
+      ],
+      compromisos: []
+    };
+    component.initiativeDraft = {
+      id: 'I1',
+      nombre: 'Iniciativa 1',
+      eje: 'E1',
+      inicio: '2026-T1',
+      fin: '2026-T2',
+      certeza: 'planificado',
+      informacion_adicional: {},
+      expedientes: [],
+      dependencias: []
+    };
+
+    component.linkExistingExpediente(component.config.expedientes_catalogo[0]);
+    component.linkExistingExpediente(component.config.expedientes_catalogo[0]);
+
+    expect(component.draftExpedientes().length).toBe(1);
+    expect(component.draftExpedientes()[0].id).toBe('EXP-1');
   });
 });

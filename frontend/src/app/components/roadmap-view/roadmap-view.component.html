@@ -135,7 +135,7 @@
 
 <div class="side-panel-backdrop" *ngIf="activePanel !== 'none'" (click)="closeSidePanel()"></div>
 
-<aside class="side-panel" *ngIf="activePanel === 'expedientes'">
+<aside class="side-panel expedientes-panel" *ngIf="activePanel === 'expedientes'" [style.width.px]="expedientesPanelWidth">
   <div class="side-panel-header">
     <div>
       <p class="eyebrow">Consulta rápida</p>
@@ -153,34 +153,57 @@
     <input [(ngModel)]="expeditionSearch" placeholder="DNA, empresa, iniciativa..." />
   </label>
 
-  <div class="drawer-stack" *ngIf="filteredExpeditionRows().length > 0; else noExpedientesDrawer">
-    <article class="drawer-card expedition-card" *ngFor="let expedition of filteredExpeditionRows()">
-      <div class="drawer-card-top">
-        <div>
-          <h4>{{ expedition.expediente || 'Sin expediente' }}</h4>
-          <p>{{ expedition.initiativeName }} <span class="muted">({{ expedition.initiativeId }})</span></p>
+  <label class="panel-width-control">
+    Ancho del panel
+    <input
+      type="range"
+      min="560"
+      [max]="expedientesPanelMaxWidth()"
+      [ngModel]="expedientesPanelWidth"
+      (ngModelChange)="setExpedientesPanelWidth($event)"
+    />
+  </label>
+
+  <div class="expedition-table-shell" *ngIf="filteredExpeditionRows().length > 0; else noExpedientesDrawer">
+    <div class="expedition-table">
+      <div class="expedition-row expedition-head">
+        <span>Expediente</span>
+        <span>Precio licitación</span>
+        <span>Precio adjudicación</span>
+        <span>% descuento</span>
+        <span>Fecha fin expediente</span>
+        <span></span>
+      </div>
+
+      <div class="expedition-row" *ngFor="let expedition of filteredExpeditionRows()">
+        <div class="expedition-main-cell">
+          <strong [attr.title]="expedition.expediente || 'Sin expediente'">{{ expedition.expediente || 'Sin expediente' }}</strong>
+          <small [attr.title]="initiativesLabel(expedition)">{{ initiativesLabel(expedition) }}</small>
         </div>
-        <span class="mini-chip">{{ expedition.tipo || 'sin tipo' }}</span>
+        <span [attr.title]="expedition.precioLicitacion || '-'">{{ expedition.precioLicitacion || '-' }}</span>
+        <span [attr.title]="expedition.precioAdjudicacion || '-'">{{ expedition.precioAdjudicacion || '-' }}</span>
+        <span [attr.title]="expeditionDiscountLabel(expedition)">{{ expeditionDiscountLabel(expedition) }}</span>
+        <span [attr.title]="expedition.fechaFinExpediente || '-'">{{ expedition.fechaFinExpediente || '-' }}</span>
+        <button type="button" class="secondary compact-action" (click)="openExpeditionDetails(expedition)">Ver más</button>
       </div>
+    </div>
 
-      <div class="detail-grid">
-        <div><strong>Empresa</strong><span>{{ expedition.empresa || '-' }}</span></div>
-        <div><strong>Impacto</strong><span>{{ expedition.impacto || '-' }}</span></div>
-        <div><strong>Licitación</strong><span>{{ expedition.precioLicitacion || '-' }}</span></div>
-        <div><strong>Adjudicación</strong><span>{{ expedition.precioAdjudicacion || '-' }}</span></div>
-        <div><strong>Fecha fin</strong><span>{{ expedition.fechaFinExpediente || '-' }}</span></div>
+    <section class="expedition-summary">
+      <div>
+        <strong>Total licitación</strong>
+        <span>{{ expeditionSummary().totalLicitacion | number:'1.2-2' }}</span>
       </div>
-
-      <div class="additional-list" *ngIf="(expedition.informacionAdicional | keyvalue).length > 0">
-        <span class="data-chip" *ngFor="let item of expedition.informacionAdicional | keyvalue">
-          {{ item.key }}: {{ item.value }}
+      <div>
+        <strong>Total adjudicación</strong>
+        <span>{{ expeditionSummary().totalAdjudicacion | number:'1.2-2' }}</span>
+      </div>
+      <div>
+        <strong>% medio descuento</strong>
+        <span>
+          {{ expeditionSummary().discountCount > 0 ? (expeditionSummary().averageDiscount | number:'1.1-1') + '%' : '-' }}
         </span>
       </div>
-
-      <div class="drawer-actions">
-        <button type="button" (click)="openExpeditionDetails(expedition)">Editar iniciativa</button>
-      </div>
-    </article>
+    </section>
   </div>
 
   <ng-template #noExpedientesDrawer>
@@ -314,6 +337,21 @@
     <button class="secondary" (click)="closeInitiativeModal()" [disabled]="savingInitiative">Cerrar</button>
   </div>
 
+  <section class="expedition-context" *ngIf="expeditionContextInitiatives().length > 0">
+    <p class="section-help">Este expediente está asociado a varias iniciativas:</p>
+    <div class="context-switches">
+      <button
+        type="button"
+        class="secondary"
+        *ngFor="let initiative of expeditionContextInitiatives()"
+        [class.active-context]="initiative.id === editingInitiativeId"
+        (click)="switchExpeditionContextInitiative(initiative.id)"
+      >
+        {{ initiative.id }} · {{ initiative.nombre }}
+      </button>
+    </div>
+  </section>
+
   <nav class="modal-tabs">
     <button type="button" [class.active]="activeInitiativeTab === 'general'" (click)="setInitiativeTab('general')">General</button>
     <button type="button" [class.active]="activeInitiativeTab === 'expedientes'" (click)="setInitiativeTab('expedientes')">Expedientes</button>
@@ -347,8 +385,32 @@
         <h4>Datos de expediente</h4>
         <p class="section-help">Cada iniciativa puede tener múltiples expedientes asociados.</p>
       </div>
-      <button type="button" (click)="addDraftExpediente()">Añadir expediente</button>
+      <div class="summary-actions">
+        <button type="button" (click)="addDraftExpediente()">Añadir expediente</button>
+        <button type="button" class="secondary" (click)="toggleLinkExpedienteSelector()">Enlazar expediente</button>
+      </div>
     </div>
+
+    <section class="link-expediente-panel" *ngIf="showLinkExpedienteSelector">
+      <label class="drawer-search">
+        Buscar expediente existente
+        <input [(ngModel)]="linkExpedienteSearch" placeholder="DNA, empresa, tipo..." />
+      </label>
+
+      <div class="link-expediente-results" *ngIf="expedientesCatalogoDisponibles().length > 0; else noCatalogExpedientes">
+        <article class="link-expediente-item" *ngFor="let expediente of expedientesCatalogoDisponibles()">
+          <div>
+            <strong>{{ expediente.expediente || 'Sin expediente' }}</strong>
+            <p>{{ expediente.empresa || 'Sin empresa' }} · {{ expediente.precio_licitacion || '-' }} / {{ expediente.precio_adjudicacion || '-' }}</p>
+          </div>
+          <button type="button" class="secondary" (click)="linkExistingExpediente(expediente)">Enlazar</button>
+        </article>
+      </div>
+
+      <ng-template #noCatalogExpedientes>
+        <p>No hay expedientes disponibles para enlazar con el filtro actual.</p>
+      </ng-template>
+    </section>
 
     <div class="expediente-stack" *ngIf="draftExpedientes().length > 0; else noExpedientesDraft">
       <section class="expediente-card" *ngFor="let exp of draftExpedientes(); let i = index">

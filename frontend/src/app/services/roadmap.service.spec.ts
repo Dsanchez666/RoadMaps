@@ -26,6 +26,7 @@ describe('RoadmapService', () => {
       horizonte_base: { inicio: '2026-T1', fin: '2030-T4' },
       ejes_estrategicos: [],
       iniciativas: [],
+      expedientes_catalogo: [],
       compromisos: []
     };
 
@@ -57,6 +58,7 @@ describe('RoadmapService', () => {
           dependencias: []
         }
       ],
+      expedientes_catalogo: [],
       compromisos: []
     };
 
