@@ -340,6 +340,52 @@ export class RoadmapViewComponent implements OnInit {
     );
   }
 
+  deleteInitiative(initiative: InitiativeConfig): void {
+    if (!this.config || !this.roadmap?.id) {
+      return;
+    }
+
+    const index = this.config.iniciativas.findIndex((item) => item.id === initiative.id);
+    if (index < 0) {
+      return;
+    }
+
+    this.error = '';
+    this.saveMessage = '';
+    const removedInitiative = this.config.iniciativas[index];
+    this.config.iniciativas.splice(index, 1);
+
+    // Keep dependency graph consistent after deleting one initiative.
+    const previousDependencias = this.config.iniciativas.map((item) => ({
+      id: item.id,
+      dependencias: JSON.parse(JSON.stringify(item.dependencias || []))
+    }));
+    for (const item of this.config.iniciativas) {
+      item.dependencias = (item.dependencias || []).filter((dependency) => dependency.iniciativa !== removedInitiative.id);
+    }
+
+    this.persistConfig(
+      () => {
+        this.saveMessage = 'Iniciativa eliminada correctamente.';
+        this.initiativesByAxis = this.groupInitiativesByAxis(this.config!);
+        this.initializeHorizonSelector(this.config!);
+        this.rebuildTimeline();
+        if (this.editingInitiativeId === removedInitiative.id) {
+          this.closeInitiativeModal();
+        }
+      },
+      () => {
+        this.config!.iniciativas.splice(index, 0, removedInitiative);
+        for (const snapshot of previousDependencias) {
+          const target = this.config!.iniciativas.find((item) => item.id === snapshot.id);
+          if (target) {
+            target.dependencias = snapshot.dependencias;
+          }
+        }
+      }
+    );
+  }
+
   saveInitiativeChanges(): void {
     if (!this.config || !this.roadmap?.id || !this.initiativeDraft) {
       return;
