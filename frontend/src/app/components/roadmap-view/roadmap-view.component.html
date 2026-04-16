@@ -123,9 +123,20 @@
           (mouseleave)="clearInitiativeHover()"
         >
           <div class="name-col initiative-cell clickable" [title]="getAdditionalValue(ini, 'objetivo')" (click)="openInitiativeModal(ini)">
-            <div class="initiative-main">
-              <strong>{{ ini.nombre }}</strong>
-              <small>{{ ini.id }}</small>
+            <div class="initiative-main-wrapper">
+              <div class="initiative-main">
+                <strong>{{ ini.nombre }}</strong>
+                <small>{{ ini.id }}</small>
+              </div>
+              <button
+                type="button"
+                class="initiative-delete-btn"
+                title="Eliminar iniciativa"
+                (click)="$event.stopPropagation(); deleteInitiative(ini)"
+                [disabled]="savingInitiative"
+              >
+                Borrar
+              </button>
             </div>
             <div class="initiative-chips">
               <span class="mini-chip">{{ ini.certeza || 'planificado' }}</span>
