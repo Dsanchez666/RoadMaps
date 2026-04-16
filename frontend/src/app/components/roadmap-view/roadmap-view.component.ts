@@ -112,6 +112,7 @@ export class RoadmapViewComponent implements OnInit {
   expeditionContextInitiativeIds: string[] = [];
   createInitiativeModalOpen = false;
   createInitiativeDraft: InitiativeConfig = this.createNewInitiativeDraft('');
+  collapsedAxisIds: Set<string> = new Set<string>();
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -181,6 +182,7 @@ export class RoadmapViewComponent implements OnInit {
           next: (config) => {
             const normalized = this.ensureConfigDefaults(config);
             this.config = normalized;
+            this.syncCollapsedAxes(normalized);
             this.initializeHorizonSelector(normalized);
             this.rebuildTimeline();
             this.initiativesByAxis = this.groupInitiativesByAxis(normalized);
@@ -264,6 +266,22 @@ export class RoadmapViewComponent implements OnInit {
 
   setInitiativeTab(tab: InitiativeModalTab): void {
     this.activeInitiativeTab = tab;
+  }
+
+  toggleAxisCollapsed(axisId: string): void {
+    const normalizedId = String(axisId || '').trim();
+    if (!normalizedId) {
+      return;
+    }
+    if (this.collapsedAxisIds.has(normalizedId)) {
+      this.collapsedAxisIds.delete(normalizedId);
+    } else {
+      this.collapsedAxisIds.add(normalizedId);
+    }
+  }
+
+  isAxisCollapsed(axisId: string): boolean {
+    return this.collapsedAxisIds.has(String(axisId || '').trim());
   }
 
   openCreateInitiativeModal(axisId: string): void {
@@ -1268,6 +1286,15 @@ export class RoadmapViewComponent implements OnInit {
       expedientes_catalogo: (config?.expedientes_catalogo || []).map((item: any) => this.normalizeSingleExpediente(item)),
       compromisos: (config?.compromisos || []).map((commitment: any) => this.normalizeCommitment(commitment))
     };
+  }
+
+  private syncCollapsedAxes(config: RoadmapConfig): void {
+    const validAxisIds = new Set((config.ejes_estrategicos || []).map((axis) => String(axis.id || '').trim()).filter((id) => !!id));
+    this.collapsedAxisIds.forEach((axisId) => {
+      if (!validAxisIds.has(axisId)) {
+        this.collapsedAxisIds.delete(axisId);
+      }
+    });
   }
 
   private openInitiativeModalById(initiativeId: string): void {
