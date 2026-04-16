@@ -110,6 +110,8 @@ export class RoadmapViewComponent implements OnInit {
   linkExpedienteSearch = '';
   expedientesPanelWidth = 760;
   expeditionContextInitiativeIds: string[] = [];
+  createInitiativeModalOpen = false;
+  createInitiativeDraft: InitiativeConfig = this.createNewInitiativeDraft('');
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -262,6 +264,62 @@ export class RoadmapViewComponent implements OnInit {
 
   setInitiativeTab(tab: InitiativeModalTab): void {
     this.activeInitiativeTab = tab;
+  }
+
+  openCreateInitiativeModal(axisId: string): void {
+    this.error = '';
+    this.saveMessage = '';
+    this.createInitiativeDraft = this.createNewInitiativeDraft(axisId);
+    this.createInitiativeModalOpen = true;
+  }
+
+  closeCreateInitiativeModal(): void {
+    this.createInitiativeModalOpen = false;
+  }
+
+  saveNewInitiative(): void {
+    if (!this.config || !this.roadmap?.id) {
+      return;
+    }
+
+    const nombre = (this.createInitiativeDraft.nombre || '').trim();
+    if (!nombre) {
+      this.error = 'El nombre de la iniciativa es obligatorio.';
+      return;
+    }
+
+    const axisId = (this.createInitiativeDraft.eje || '').trim();
+    if (!axisId) {
+      this.error = 'El eje de la iniciativa es obligatorio.';
+      return;
+    }
+
+    const newId = (this.createInitiativeDraft.id || '').trim() || this.generateInitiativeIdFromName(nombre);
+    if (this.config.iniciativas.some((initiative) => initiative.id === newId)) {
+      this.error = `Ya existe una iniciativa con id ${newId}.`;
+      return;
+    }
+
+    const newInitiative = this.normalizeInitiative({
+      ...this.createInitiativeDraft,
+      id: newId,
+      nombre
+    });
+    this.config.iniciativas.push(newInitiative);
+    const insertedIndex = this.config.iniciativas.length - 1;
+
+    this.persistConfig(
+      () => {
+        this.saveMessage = 'Iniciativa creada correctamente.';
+        this.initiativesByAxis = this.groupInitiativesByAxis(this.config!);
+        this.initializeHorizonSelector(this.config!);
+        this.rebuildTimeline();
+        this.closeCreateInitiativeModal();
+      },
+      () => {
+        this.config!.iniciativas.splice(insertedIndex, 1);
+      }
+    );
   }
 
   saveInitiativeChanges(): void {
@@ -1158,6 +1216,40 @@ export class RoadmapViewComponent implements OnInit {
       quien_compromete: '',
       informacion_adicional: {}
     };
+  }
+
+  private createNewInitiativeDraft(axisId: string): InitiativeConfig {
+    const defaultStart = this.config?.horizonte_base?.inicio || `${this.selectedStartYear}-T${this.selectedStartQuarter}`;
+    const defaultEnd = this.config?.horizonte_base?.fin || `${this.selectedEndYear}-T${this.selectedEndQuarter}`;
+    return {
+      id: '',
+      nombre: '',
+      eje: axisId,
+      inicio: defaultStart,
+      fin: defaultEnd,
+      certeza: 'planificado',
+      informacion_adicional: {},
+      expedientes: [],
+      dependencias: []
+    };
+  }
+
+  private generateInitiativeIdFromName(name: string): string {
+    const base = name
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 28) || 'INI';
+
+    let candidate = base;
+    let suffix = 1;
+    while (this.config?.iniciativas.some((initiative) => initiative.id === candidate)) {
+      suffix += 1;
+      candidate = `${base}-${suffix}`;
+    }
+    return candidate;
   }
 
   /**
