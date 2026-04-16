@@ -95,7 +95,8 @@
 
     <ng-container *ngFor="let eje of config.ejes_estrategicos">
       <div class="axis-title" [style.borderLeftColor]="eje.color || '#475569'">
-        {{ eje.id }} - {{ eje.nombre }}
+        <span>{{ eje.id }} - {{ eje.nombre }}</span>
+        <button type="button" class="axis-add-btn" (click)="openCreateInitiativeModal(eje.id)" title="Crear iniciativa en este eje">+</button>
       </div>
 
       <ng-container *ngIf="axisInitiatives(eje.id).length === 0">
@@ -131,6 +132,39 @@
       </div>
     </ng-container>
   </article>
+</section>
+
+<div class="modal-backdrop" *ngIf="createInitiativeModalOpen" (click)="closeCreateInitiativeModal()"></div>
+<section class="initiative-modal create-initiative-modal" *ngIf="createInitiativeModalOpen">
+  <div class="initiative-modal-header">
+    <div>
+      <p class="eyebrow">Nueva iniciativa</p>
+      <h3>Crear iniciativa en eje {{ createInitiativeDraft.eje }}</h3>
+    </div>
+    <button class="secondary" (click)="closeCreateInitiativeModal()" [disabled]="savingInitiative">Cerrar</button>
+  </div>
+
+  <div class="modal-grid">
+    <label>ID (opcional)<input [(ngModel)]="createInitiativeDraft.id" /></label>
+    <label>Nombre<input [(ngModel)]="createInitiativeDraft.nombre" /></label>
+    <label>Eje<input [(ngModel)]="createInitiativeDraft.eje" /></label>
+    <label>Certeza
+      <select [(ngModel)]="createInitiativeDraft.certeza">
+        <option value="comprometido">comprometido</option>
+        <option value="planificado">planificado</option>
+        <option value="exploratorio">exploratorio</option>
+      </select>
+    </label>
+    <label>Inicio<input [(ngModel)]="createInitiativeDraft.inicio" placeholder="2026-T1" /></label>
+    <label>Fin<input [(ngModel)]="createInitiativeDraft.fin" placeholder="2026-T4" /></label>
+  </div>
+
+  <div class="modal-actions">
+    <button (click)="saveNewInitiative()" [disabled]="savingInitiative">
+      {{ savingInitiative ? 'Guardando...' : 'Crear y guardar' }}
+    </button>
+    <button class="secondary" (click)="closeCreateInitiativeModal()" [disabled]="savingInitiative">Cancelar</button>
+  </div>
 </section>
 
 <div class="side-panel-backdrop" *ngIf="activePanel !== 'none'" (click)="closeSidePanel()"></div>

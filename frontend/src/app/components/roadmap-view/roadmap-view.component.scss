@@ -280,12 +280,32 @@
 }
 
 .axis-title {
+  align-items: center;
   background: #f8fafc;
   border-left: 4px solid #475569;
   border-radius: 10px;
+  display: flex;
   font-weight: 700;
+  justify-content: space-between;
   margin-top: 10px;
   padding: 9px 10px;
+}
+
+.axis-add-btn {
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  color: #0f4c81;
+  font-size: 16px;
+  font-weight: 700;
+  height: 28px;
+  line-height: 1;
+  padding: 0;
+  width: 28px;
+}
+
+.axis-add-btn:hover {
+  background: #e2e8f0;
 }
 
 .empty-axis {
@@ -453,6 +473,10 @@
   transform: translate(-50%, -50%);
   width: calc(100% - 24px);
   z-index: 100;
+}
+
+.create-initiative-modal {
+  max-width: 760px;
 }
 
 .modal-tabs {
