@@ -95,41 +95,53 @@
 
     <ng-container *ngFor="let eje of config.ejes_estrategicos">
       <div class="axis-title" [style.borderLeftColor]="eje.color || '#475569'">
-        <span>{{ eje.id }} - {{ eje.nombre }}</span>
+        <div class="axis-title-main">
+          <span>{{ eje.id }} - {{ eje.nombre }}</span>
+          <button
+            type="button"
+            class="axis-collapse-btn"
+            (click)="toggleAxisCollapsed(eje.id)"
+            [attr.title]="isAxisCollapsed(eje.id) ? 'Desplegar eje' : 'Colapsar eje'"
+          >
+            {{ isAxisCollapsed(eje.id) ? '▸' : '▾' }}
+          </button>
+        </div>
         <button type="button" class="axis-add-btn" (click)="openCreateInitiativeModal(eje.id)" title="Crear iniciativa en este eje">+</button>
       </div>
 
-      <ng-container *ngIf="axisInitiatives(eje.id).length === 0">
-        <div class="empty-axis">Sin iniciativas</div>
-      </ng-container>
+      <ng-container *ngIf="!isAxisCollapsed(eje.id)">
+        <ng-container *ngIf="axisInitiatives(eje.id).length === 0">
+          <div class="empty-axis">Sin iniciativas</div>
+        </ng-container>
 
-      <div
-        class="initiative-row"
-        *ngFor="let ini of axisInitiatives(eje.id)"
-        [style.gridTemplateColumns]="'300px repeat(' + timeline.length + ', minmax(22px, 1fr))'"
-        [class.dimmed]="isDimmed(ini)"
-        (mouseenter)="onInitiativeHover(ini)"
-        (mouseleave)="clearInitiativeHover()"
-      >
-        <div class="name-col initiative-cell clickable" [title]="getAdditionalValue(ini, 'objetivo')" (click)="openInitiativeModal(ini)">
-          <div class="initiative-main">
-            <strong>{{ ini.nombre }}</strong>
-            <small>{{ ini.id }}</small>
-          </div>
-          <div class="initiative-chips">
-            <span class="mini-chip">{{ ini.certeza || 'planificado' }}</span>
-            <span class="mini-chip" *ngIf="resolveInitiativeExpedientes(ini).length > 0">
-              {{ resolveInitiativeExpedientes(ini).length }} exp.
-            </span>
-          </div>
-        </div>
         <div
-          *ngFor="let slot of timeline; trackBy: trackByQuarter"
-          class="slot-cell"
-          [class.filled]="isFilled(ini, slot)"
-          [class]="isFilled(ini, slot) ? certaintyClass(ini.certeza) : ''"
-        ></div>
-      </div>
+          class="initiative-row"
+          *ngFor="let ini of axisInitiatives(eje.id)"
+          [style.gridTemplateColumns]="'300px repeat(' + timeline.length + ', minmax(22px, 1fr))'"
+          [class.dimmed]="isDimmed(ini)"
+          (mouseenter)="onInitiativeHover(ini)"
+          (mouseleave)="clearInitiativeHover()"
+        >
+          <div class="name-col initiative-cell clickable" [title]="getAdditionalValue(ini, 'objetivo')" (click)="openInitiativeModal(ini)">
+            <div class="initiative-main">
+              <strong>{{ ini.nombre }}</strong>
+              <small>{{ ini.id }}</small>
+            </div>
+            <div class="initiative-chips">
+              <span class="mini-chip">{{ ini.certeza || 'planificado' }}</span>
+              <span class="mini-chip" *ngIf="resolveInitiativeExpedientes(ini).length > 0">
+                {{ resolveInitiativeExpedientes(ini).length }} exp.
+              </span>
+            </div>
+          </div>
+          <div
+            *ngFor="let slot of timeline; trackBy: trackByQuarter"
+            class="slot-cell"
+            [class.filled]="isFilled(ini, slot)"
+            [class]="isFilled(ini, slot) ? certaintyClass(ini.certeza) : ''"
+          ></div>
+        </div>
+      </ng-container>
     </ng-container>
   </article>
 </section>
