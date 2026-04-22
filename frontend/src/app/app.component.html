@@ -3,7 +3,18 @@
     <a routerLink="/roadmaps" class="brand">Roadmaps</a>
   </div>
 
+  <div class="center">
+    <nav class="main-nav" *ngIf="authService.isAuthenticated">
+      <a routerLink="/roadmaps" routerLinkActive="active">Roadmaps</a>
+      <a routerLink="/admin/users" routerLinkActive="active" *ngIf="authService.currentUser?.rol === 'ADMIN'">Usuarios</a>
+    </nav>
+  </div>
+
   <div class="right">
+    <span class="user-info" *ngIf="authService.isAuthenticated">
+      {{ authService.currentUser?.username }} ({{ authService.currentUser?.rol }})
+    </span>
+
     <span
       class="status"
       [class.connected]="status?.connected"
@@ -17,7 +28,7 @@
       {{ reconnecting ? 'Reconectando...' : 'Reconectar' }}
     </button>
 
-    <button *ngIf="!isDatabaseRoute()" (click)="salir()">Salir</button>
+    <button *ngIf="authService.isAuthenticated" (click)="logout()">Cerrar Sesión</button>
   </div>
 </header>
 

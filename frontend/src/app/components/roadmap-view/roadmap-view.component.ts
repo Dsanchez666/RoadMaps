@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 
+import { AuthService } from '../../services/auth.service';
 import { ConnectionStateService } from '../../services/connection-state.service';
 import {
   CommitmentConfig,
@@ -118,7 +119,8 @@ export class RoadmapViewComponent implements OnInit {
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     private readonly roadmapService: RoadmapService,
-    private readonly connectionState: ConnectionStateService
+    private readonly connectionState: ConnectionStateService,
+    public readonly authService: AuthService
   ) {}
 
   /**
@@ -285,6 +287,9 @@ export class RoadmapViewComponent implements OnInit {
   }
 
   openCreateInitiativeModal(axisId: string): void {
+    if (!this.canEdit()) {
+      return;
+    }
     this.error = '';
     this.saveMessage = '';
     this.createInitiativeDraft = this.createNewInitiativeDraft(axisId);
@@ -296,6 +301,13 @@ export class RoadmapViewComponent implements OnInit {
   }
 
   saveNewInitiative(): void {
+    // Bloquear si es CONSULTA
+    if (this.isConsulta()) {
+      console.log('⛔ CONSULTA no puede crear iniciativas');
+      this.error = 'No tienes permisos para crear iniciativas';
+      return;
+    }
+
     if (!this.config || !this.roadmap?.id) {
       return;
     }
@@ -341,6 +353,12 @@ export class RoadmapViewComponent implements OnInit {
   }
 
   deleteInitiative(initiative: InitiativeConfig): void {
+    // Bloquear si es CONSULTA
+    if (this.isConsulta()) {
+      console.log('⛔ CONSULTA no puede borrar iniciativas');
+      return;
+    }
+
     if (!this.config || !this.roadmap?.id) {
       return;
     }
@@ -387,6 +405,13 @@ export class RoadmapViewComponent implements OnInit {
   }
 
   saveInitiativeChanges(): void {
+    // Bloquear si es CONSULTA
+    if (this.isConsulta()) {
+      console.log('⛔ CONSULTA no puede editar iniciativas');
+      this.error = 'No tienes permisos para editar iniciativas';
+      return;
+    }
+
     if (!this.config || !this.roadmap?.id || !this.initiativeDraft) {
       return;
     }
@@ -635,6 +660,9 @@ export class RoadmapViewComponent implements OnInit {
   }
 
   toggleLinkExpedienteSelector(): void {
+    if (!this.canEdit()) {
+      return;
+    }
     this.showLinkExpedienteSelector = !this.showLinkExpedienteSelector;
     if (!this.showLinkExpedienteSelector) {
       this.linkExpedienteSearch = '';
@@ -642,6 +670,9 @@ export class RoadmapViewComponent implements OnInit {
   }
 
   linkExistingExpediente(expediente: InitiativeExpediente): void {
+    if (!this.canEdit()) {
+      return;
+    }
     if (!this.initiativeDraft) {
       return;
     }
@@ -715,6 +746,9 @@ export class RoadmapViewComponent implements OnInit {
    * Opens commitment creation form.
    */
   showAddCommitmentForm(): void {
+    if (!this.canEdit()) {
+      return;
+    }
     this.error = '';
     this.saveMessage = '';
     this.activePanel = 'compromisos';
@@ -725,6 +759,9 @@ export class RoadmapViewComponent implements OnInit {
    * Opens commitments panel from initiative modal context.
    */
   openCommitmentPanelFromInitiative(): void {
+    if (!this.canEdit()) {
+      return;
+    }
     this.activePanel = 'compromisos';
     this.showAddCommitmentForm();
     this.closeInitiativeModal();
@@ -742,6 +779,9 @@ export class RoadmapViewComponent implements OnInit {
    * Creates one new commitment and persists the roadmap config.
    */
   addCommitment(): void {
+    if (!this.canEdit()) {
+      return;
+    }
     if (!this.config || !this.roadmap?.id) {
       return;
     }
@@ -778,6 +818,9 @@ export class RoadmapViewComponent implements OnInit {
    * @param index Position in commitment list.
    */
   removeCommitment(commitment: CommitmentConfig): void {
+    if (!this.canEdit()) {
+      return;
+    }
     if (!this.config || !this.roadmap?.id) {
       return;
     }
@@ -817,6 +860,9 @@ export class RoadmapViewComponent implements OnInit {
    * Adds one suggested key to commitment draft custom fields.
    */
   addCommitmentSuggestedKey(key: string): void {
+    if (!this.canEdit()) {
+      return;
+    }
     const normalized = (key || '').trim();
     if (!normalized) {
       return;
@@ -830,6 +876,9 @@ export class RoadmapViewComponent implements OnInit {
    * Adds one new custom field to commitment draft.
    */
   addCommitmentAdditionalField(): void {
+    if (!this.canEdit()) {
+      return;
+    }
     const existing = new Set(Object.keys(this.commitmentDraft.informacion_adicional || {}));
     let candidate = 'nuevo_campo';
     let suffix = 1;
@@ -844,6 +893,9 @@ export class RoadmapViewComponent implements OnInit {
    * Renames one custom field key inside commitment draft.
    */
   renameCommitmentAdditionalKey(oldKey: string, newKey: string): void {
+    if (!this.canEdit()) {
+      return;
+    }
     const nextKey = (newKey || '').trim();
     if (!nextKey || nextKey === oldKey) {
       return;
@@ -860,6 +912,9 @@ export class RoadmapViewComponent implements OnInit {
    * Updates one custom field value inside commitment draft.
    */
   updateCommitmentAdditionalValue(key: string, value: string): void {
+    if (!this.canEdit()) {
+      return;
+    }
     this.commitmentDraft.informacion_adicional[key] = value;
   }
 
@@ -867,6 +922,9 @@ export class RoadmapViewComponent implements OnInit {
    * Removes one custom field from commitment draft.
    */
   removeCommitmentAdditionalField(key: string): void {
+    if (!this.canEdit()) {
+      return;
+    }
     delete this.commitmentDraft.informacion_adicional[key];
   }
 
@@ -896,6 +954,9 @@ export class RoadmapViewComponent implements OnInit {
    * Adds one empty dynamic field to modal draft.
    */
   addDraftAdditionalField(): void {
+    if (!this.canEdit()) {
+      return;
+    }
     if (!this.initiativeDraft) {
       return;
     }
@@ -916,6 +977,9 @@ export class RoadmapViewComponent implements OnInit {
    * Adds one suggested dynamic key to modal draft.
    */
   addDraftSuggestedField(key: string): void {
+    if (!this.canEdit()) {
+      return;
+    }
     if (!this.initiativeDraft) {
       return;
     }
@@ -935,6 +999,9 @@ export class RoadmapViewComponent implements OnInit {
    * Renames one dynamic field key in modal draft.
    */
   renameDraftAdditionalKey(oldKey: string, newKey: string): void {
+    if (!this.canEdit()) {
+      return;
+    }
     if (!this.initiativeDraft?.informacion_adicional) {
       return;
     }
@@ -954,6 +1021,9 @@ export class RoadmapViewComponent implements OnInit {
    * Updates one dynamic field value in modal draft.
    */
   updateDraftAdditionalValue(key: string, value: string): void {
+    if (!this.canEdit()) {
+      return;
+    }
     if (!this.initiativeDraft) {
       return;
     }
@@ -990,6 +1060,9 @@ export class RoadmapViewComponent implements OnInit {
    * Adds one new expediente row in initiative draft.
    */
   addDraftExpediente(): void {
+    if (!this.canEdit()) {
+      return;
+    }
     if (!this.initiativeDraft) {
       return;
     }
@@ -1000,6 +1073,9 @@ export class RoadmapViewComponent implements OnInit {
    * Removes one expediente row from initiative draft.
    */
   removeDraftExpediente(index: number): void {
+    if (!this.canEdit()) {
+      return;
+    }
     if (!this.initiativeDraft) {
       return;
     }
@@ -1038,6 +1114,9 @@ export class RoadmapViewComponent implements OnInit {
    * Adds one custom field to an expediente row.
    */
   addDraftExpedienteAdditionalField(expediente: InitiativeExpediente): void {
+    if (!this.canEdit()) {
+      return;
+    }
     if (!expediente.informacion_adicional) {
       expediente.informacion_adicional = {};
     }
@@ -1055,6 +1134,9 @@ export class RoadmapViewComponent implements OnInit {
    * Adds one suggested custom field to an expediente row.
    */
   addDraftExpedienteSuggestedField(expediente: InitiativeExpediente, key: string): void {
+    if (!this.canEdit()) {
+      return;
+    }
     const normalized = (key || '').trim();
     if (!normalized) {
       return;
@@ -1071,6 +1153,9 @@ export class RoadmapViewComponent implements OnInit {
    * Renames one custom key in expediente row.
    */
   renameDraftExpedienteAdditionalKey(expediente: InitiativeExpediente, oldKey: string, newKey: string): void {
+    if (!this.canEdit()) {
+      return;
+    }
     const nextKey = (newKey || '').trim();
     if (!nextKey || nextKey === oldKey) {
       return;
@@ -1090,6 +1175,9 @@ export class RoadmapViewComponent implements OnInit {
    * Updates one custom value in expediente row.
    */
   updateDraftExpedienteAdditionalValue(expediente: InitiativeExpediente, key: string, value: string): void {
+    if (!this.canEdit()) {
+      return;
+    }
     if (!expediente.informacion_adicional) {
       expediente.informacion_adicional = {};
     }
@@ -1100,6 +1188,9 @@ export class RoadmapViewComponent implements OnInit {
    * Removes one custom field from expediente row.
    */
   removeDraftExpedienteAdditionalField(expediente: InitiativeExpediente, key: string): void {
+    if (!this.canEdit()) {
+      return;
+    }
     if (!expediente.informacion_adicional) {
       return;
     }
@@ -1110,6 +1201,9 @@ export class RoadmapViewComponent implements OnInit {
    * Removes one dynamic field from modal draft.
    */
   removeDraftAdditionalField(key: string): void {
+    if (!this.canEdit()) {
+      return;
+    }
     if (!this.initiativeDraft?.informacion_adicional) {
       return;
     }
@@ -1634,5 +1728,20 @@ export class RoadmapViewComponent implements OnInit {
     const minWidth = 560;
     const maxWidth = Math.max(minWidth, Math.floor(viewport * 0.85));
     this.expedientesPanelWidth = Math.max(minWidth, Math.min(maxWidth, this.expedientesPanelWidth));
+  }
+
+  /**
+   * Verifica si el usuario puede editar roadmaps.
+   */
+  canEdit(): boolean {
+    const userRole = this.authService.currentUser?.rol;
+    return userRole === 'ADMIN' || userRole === 'GESTION';
+  }
+
+  /**
+   * Verifica si el usuario es solo consulta (lectura).
+   */
+  isConsulta(): boolean {
+    return this.authService.currentUser?.rol === 'CONSULTA';
   }
 }

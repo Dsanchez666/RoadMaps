@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 
+import { AuthService } from '../../services/auth.service';
 import {
   AxisConfig,
   CommitmentConfig,
@@ -47,7 +48,8 @@ export class RoadmapEditComponent implements OnInit {
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     private readonly roadmapService: RoadmapService,
-    private readonly connectionState: ConnectionStateService
+    private readonly connectionState: ConnectionStateService,
+    public readonly authService: AuthService
   ) {}
 
   /**

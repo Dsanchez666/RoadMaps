@@ -1,11 +1,13 @@
 package com.example.roadmap.adapters.in.web;
 
+import com.example.roadmap.adapters.in.web.annotation.RequireRole;
 import com.example.roadmap.application.CreateRoadmapUseCase;
 import com.example.roadmap.application.RoadmapConfigUseCase;
 import com.example.roadmap.adapters.out.persistence.JdbcRoadmapConfigRepository;
 import com.example.roadmap.adapters.out.persistence.JdbcRoadmapRepository;
 import com.example.roadmap.domain.Roadmap;
 import com.example.roadmap.domain.RoadmapConfig;
+import com.example.roadmap.domain.Usuario;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -39,8 +41,10 @@ public class RoadmapController {
 
     /**
      * Creates a roadmap from a basic payload.
+     * Requires GESTION or ADMIN role.
      */
     @PostMapping
+    @RequireRole(roles = {Usuario.Role.GESTION, Usuario.Role.ADMIN})
     public ResponseEntity<?> create(@RequestBody CreateDto dto) {
         try {
             LOG.info("Solicitud crear roadmap recibida");
@@ -65,8 +69,10 @@ public class RoadmapController {
 
     /**
      * Imports one full roadmap payload including editable config.
+     * Requires GESTION or ADMIN role.
      */
     @PostMapping("/import")
+    @RequireRole(roles = {Usuario.Role.GESTION, Usuario.Role.ADMIN})
     public ResponseEntity<?> importRoadmap(@RequestBody ImportRoadmapDto dto) {
         try {
             LOG.info("Solicitud importación roadmap recibida");
@@ -98,8 +104,10 @@ public class RoadmapController {
 
     /**
      * Lists all roadmaps.
+     * Requires any authenticated user (all roles have read access).
      */
     @GetMapping
+    @RequireRole(roles = {Usuario.Role.CONSULTA, Usuario.Role.GESTION, Usuario.Role.ADMIN})
     public ResponseEntity<?> list() {
         try {
             LOG.info("Solicitud listar roadmaps");
@@ -117,8 +125,10 @@ public class RoadmapController {
 
     /**
      * Returns one roadmap by id.
+     * Requires any authenticated user (all roles have read access).
      */
     @GetMapping("/{id}")
+    @RequireRole(roles = {Usuario.Role.CONSULTA, Usuario.Role.GESTION, Usuario.Role.ADMIN})
     public ResponseEntity<?> get(@PathVariable String id) {
         try {
             LOG.info("Solicitud get roadmap [{}]", id);
@@ -136,8 +146,10 @@ public class RoadmapController {
 
     /**
      * Returns full editable configuration for one roadmap.
+     * Requires any authenticated user (all roles have read access).
      */
     @GetMapping("/{id}/config")
+    @RequireRole(roles = {Usuario.Role.CONSULTA, Usuario.Role.GESTION, Usuario.Role.ADMIN})
     public ResponseEntity<?> getConfig(@PathVariable String id) {
         try {
             LOG.info("Solicitud get configuración roadmap [{}]", id);

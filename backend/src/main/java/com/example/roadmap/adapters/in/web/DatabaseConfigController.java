@@ -106,23 +106,23 @@ public class DatabaseConfigController {
             DatabaseConnection.setOracleParams(host, port, sid, user, password);
             DatabaseConnection.setDatabaseType("ORACLE");
 
-            Connection conn = DatabaseConnection.connect();
-
-            Map<String, Object> response = new HashMap<>();
-            if (conn != null && DatabaseConnection.isConnected()) {
-                response.put("status", "SUCCESS");
-                response.put("message", "Successfully connected to Oracle database");
-                response.put("type", "ORACLE");
-                response.put("connectionUrl", DatabaseConnection.getConnectionInfo());
-                response.put("host", host);
-                response.put("port", port);
-                response.put("sid", sid);
-                return ResponseEntity.ok(response);
-            } else {
-                response.put("status", "FAILED");
-                response.put("message", "Connection returned null - check driver availability and credentials");
-                response.put("type", "ORACLE");
-                return ResponseEntity.status(500).body(response);
+            try (Connection conn = DatabaseConnection.connect()) {
+                Map<String, Object> response = new HashMap<>();
+                if (conn != null && DatabaseConnection.isConnected()) {
+                    response.put("status", "SUCCESS");
+                    response.put("message", "Successfully connected to Oracle database");
+                    response.put("type", "ORACLE");
+                    response.put("connectionUrl", DatabaseConnection.getConnectionInfo());
+                    response.put("host", host);
+                    response.put("port", port);
+                    response.put("sid", sid);
+                    return ResponseEntity.ok(response);
+                } else {
+                    response.put("status", "FAILED");
+                    response.put("message", "Connection returned null - check driver availability and credentials");
+                    response.put("type", "ORACLE");
+                    return ResponseEntity.status(500).body(response);
+                }
             }
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();

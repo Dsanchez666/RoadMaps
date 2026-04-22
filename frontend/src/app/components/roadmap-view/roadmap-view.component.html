@@ -1,7 +1,17 @@
 <section class="header">
-  <button (click)="volver()">Volver</button>
+  <button (click)="volver()" class="btn-back">← Volver</button>
   <h2>Visualización de Roadmap</h2>
-  <button (click)="editar()" [disabled]="!roadmap?.id">Editar</button>
+  <div class="header-actions">
+    <button 
+      *ngIf="canEdit()" 
+      (click)="editar()" 
+      [disabled]="!roadmap?.id"
+      class="btn-edit"
+    >
+      ✏️ Editar
+    </button>
+    <span *ngIf="isConsulta()" class="read-only-badge">📖 Solo lectura</span>
+  </div>
 </section>
 
 <div *ngIf="error" class="error">
@@ -106,7 +116,15 @@
             {{ isAxisCollapsed(eje.id) ? '▸' : '▾' }}
           </button>
         </div>
-        <button type="button" class="axis-add-btn" (click)="openCreateInitiativeModal(eje.id)" title="Crear iniciativa en este eje">+</button>
+        <button 
+          type="button" 
+          class="axis-add-btn" 
+          *ngIf="canEdit()"
+          (click)="openCreateInitiativeModal(eje.id)" 
+          title="Crear iniciativa en este eje"
+        >
+          +
+        </button>
       </div>
 
       <ng-container *ngIf="!isAxisCollapsed(eje.id)">
@@ -129,13 +147,14 @@
                 <small>{{ ini.id }}</small>
               </div>
               <button
+                *ngIf="canEdit()"
                 type="button"
                 class="initiative-delete-btn"
                 title="Eliminar iniciativa"
                 (click)="$event.stopPropagation(); deleteInitiative(ini)"
                 [disabled]="savingInitiative"
               >
-                Borrar
+                🗑️ Borrar
               </button>
             </div>
             <div class="initiative-chips">
@@ -158,7 +177,7 @@
 </section>
 
 <div class="modal-backdrop" *ngIf="createInitiativeModalOpen" (click)="closeCreateInitiativeModal()"></div>
-<section class="initiative-modal create-initiative-modal" *ngIf="createInitiativeModalOpen">
+<section class="initiative-modal create-initiative-modal" *ngIf="createInitiativeModalOpen && canEdit()">
   <div class="initiative-modal-header">
     <div>
       <p class="eyebrow">Nueva iniciativa</p>
@@ -286,10 +305,10 @@
       Buscar compromiso
       <input [(ngModel)]="commitmentSearch" placeholder="actor, descripción, fecha..." />
     </label>
-    <button type="button" (click)="showAddCommitmentForm()">Nuevo compromiso</button>
+    <button *ngIf="canEdit()" type="button" (click)="showAddCommitmentForm()">Nuevo compromiso</button>
   </div>
 
-  <section class="commitment-form drawer-form" *ngIf="showCommitmentForm">
+  <section class="commitment-form drawer-form" *ngIf="showCommitmentForm && canEdit()">
     <h4>Nuevo compromiso</h4>
     <div class="commitment-grid">
       <label>
@@ -317,9 +336,9 @@
     <section class="additional-block">
       <div class="additional-header">
         <strong>Campos adicionales</strong>
-        <button type="button" (click)="addCommitmentAdditionalField()">Añadir campo</button>
-      </div>
-      <div class="suggested-row">
+      <button *ngIf="canEdit()" type="button" (click)="addCommitmentAdditionalField()">Añadir campo</button>
+    </div>
+      <div class="suggested-row" *ngIf="canEdit()">
         <button
           type="button"
           *ngFor="let suggested of availableCommitmentSuggestedKeys()"
@@ -332,21 +351,23 @@
         <input
           class="field-key"
           [ngModel]="key"
+          [readonly]="isConsulta()"
           (ngModelChange)="renameCommitmentAdditionalKey(key, $event)"
           placeholder="clave"
         />
         <input
           class="field-value"
           [ngModel]="commitmentDraft.informacion_adicional[key]"
+          [readonly]="isConsulta()"
           (ngModelChange)="updateCommitmentAdditionalValue(key, $event)"
           placeholder="valor"
         />
-        <button type="button" class="secondary" (click)="removeCommitmentAdditionalField(key)">Eliminar</button>
+        <button *ngIf="canEdit()" type="button" class="secondary" (click)="removeCommitmentAdditionalField(key)">Eliminar</button>
       </div>
     </section>
 
     <div class="drawer-actions">
-      <button type="button" (click)="addCommitment()" [disabled]="savingCommitment">
+      <button *ngIf="canEdit()" type="button" (click)="addCommitment()" [disabled]="savingCommitment">
         {{ savingCommitment ? 'Guardando...' : 'Guardar compromiso' }}
       </button>
       <button type="button" class="secondary" (click)="cancelCommitmentForm()" [disabled]="savingCommitment">
@@ -372,7 +393,7 @@
       </div>
 
       <div class="drawer-actions">
-        <button type="button" class="danger-outline" (click)="removeCommitment(commitment)" [disabled]="savingCommitment">
+        <button *ngIf="canEdit()" type="button" class="danger-outline" (click)="removeCommitment(commitment)" [disabled]="savingCommitment">
           Eliminar
         </button>
       </div>
@@ -415,157 +436,182 @@
     <button type="button" [class.active]="activeInitiativeTab === 'adicional'" (click)="setInitiativeTab('adicional')">Información adicional</button>
   </nav>
 
-  <section *ngIf="activeInitiativeTab === 'general'">
-    <div class="modal-grid">
-      <label>ID<input [(ngModel)]="initiativeDraft.id" /></label>
-      <label>Nombre<input [(ngModel)]="initiativeDraft.nombre" /></label>
-      <label>Eje<input [(ngModel)]="initiativeDraft.eje" /></label>
-      <label>Inicio<input [(ngModel)]="initiativeDraft.inicio" /></label>
-      <label>Fin<input [(ngModel)]="initiativeDraft.fin" /></label>
-      <label>Certeza
-        <select [(ngModel)]="initiativeDraft.certeza">
-          <option value="comprometido">comprometido</option>
-          <option value="planificado">planificado</option>
-          <option value="exploratorio">exploratorio</option>
-        </select>
-      </label>
-    </div>
+  <div class="initiative-modal-body">
+    <section *ngIf="activeInitiativeTab === 'general'" class="initiative-pane">
+      <article class="modal-note" *ngIf="isConsulta()">
+        Modo consulta: la información se muestra en solo lectura.
+      </article>
 
-    <label>Dependencias (IDs separadas por coma)
-      <input [(ngModel)]="dependenciesInput" />
-    </label>
-  </section>
+      <article class="modal-section-card">
+        <header class="modal-section-header">
+          <h4>Datos principales</h4>
+          <p class="section-help">Identificación, encaje en eje y horizonte temporal de la iniciativa.</p>
+        </header>
+        <div class="modal-grid">
+          <label>ID<input [(ngModel)]="initiativeDraft.id" [readonly]="isConsulta()" /></label>
+          <label>Nombre<input [(ngModel)]="initiativeDraft.nombre" [readonly]="isConsulta()" /></label>
+          <label>Eje<input [(ngModel)]="initiativeDraft.eje" [readonly]="isConsulta()" /></label>
+          <label>Inicio<input [(ngModel)]="initiativeDraft.inicio" [readonly]="isConsulta()" /></label>
+          <label>Fin<input [(ngModel)]="initiativeDraft.fin" [readonly]="isConsulta()" /></label>
+          <label>Certeza
+            <select [(ngModel)]="initiativeDraft.certeza" [disabled]="isConsulta()">
+              <option value="comprometido">comprometido</option>
+              <option value="planificado">planificado</option>
+              <option value="exploratorio">exploratorio</option>
+            </select>
+          </label>
+        </div>
+      </article>
 
-  <section *ngIf="activeInitiativeTab === 'expedientes'" class="expedition-fields">
-    <div class="tab-section-header">
-      <div>
-        <h4>Datos de expediente</h4>
-        <p class="section-help">Cada iniciativa puede tener múltiples expedientes asociados.</p>
-      </div>
-      <div class="summary-actions">
-        <button type="button" (click)="addDraftExpediente()">Añadir expediente</button>
-        <button type="button" class="secondary" (click)="toggleLinkExpedienteSelector()">Enlazar expediente</button>
-      </div>
-    </div>
+      <article class="modal-section-card">
+        <header class="modal-section-header">
+          <h4>Dependencias</h4>
+          <p class="section-help">Introduce IDs separadas por coma para declarar dependencia con otras iniciativas.</p>
+        </header>
+        <label class="full-width-field">
+          Dependencias (IDs separadas por coma)
+          <input [(ngModel)]="dependenciesInput" [readonly]="isConsulta()" />
+        </label>
+      </article>
+    </section>
 
-    <section class="link-expediente-panel" *ngIf="showLinkExpedienteSelector">
-      <label class="drawer-search">
-        Buscar expediente existente
-        <input [(ngModel)]="linkExpedienteSearch" placeholder="DNA, empresa, tipo..." />
-      </label>
-
-      <div class="link-expediente-results" *ngIf="expedientesCatalogoDisponibles().length > 0; else noCatalogExpedientes">
-        <article class="link-expediente-item" *ngFor="let expediente of expedientesCatalogoDisponibles()">
+    <section *ngIf="activeInitiativeTab === 'expedientes'" class="initiative-pane expedition-fields">
+      <article class="modal-section-card">
+        <div class="tab-section-header">
           <div>
-            <strong>{{ expediente.expediente || 'Sin expediente' }}</strong>
-            <p>{{ expediente.empresa || 'Sin empresa' }} · {{ expediente.precio_licitacion || '-' }} / {{ expediente.precio_adjudicacion || '-' }}</p>
+            <h4>Datos de expediente</h4>
+            <p class="section-help">Gestiona uno o varios expedientes asociados a la iniciativa.</p>
           </div>
-          <button type="button" class="secondary" (click)="linkExistingExpediente(expediente)">Enlazar</button>
-        </article>
-      </div>
-
-      <ng-template #noCatalogExpedientes>
-        <p>No hay expedientes disponibles para enlazar con el filtro actual.</p>
-      </ng-template>
-    </section>
-
-    <div class="expediente-stack" *ngIf="draftExpedientes().length > 0; else noExpedientesDraft">
-      <section class="expediente-card" *ngFor="let exp of draftExpedientes(); let i = index">
-        <div class="expediente-card-header">
-          <h5>Expediente {{ i + 1 }}</h5>
-          <button type="button" class="danger-outline" (click)="removeDraftExpediente(i)">Eliminar</button>
+          <div class="summary-actions">
+            <button *ngIf="canEdit()" type="button" (click)="addDraftExpediente()">Añadir expediente</button>
+            <button *ngIf="canEdit()" type="button" class="secondary" (click)="toggleLinkExpedienteSelector()">Enlazar expediente</button>
+          </div>
         </div>
 
-        <div class="modal-grid expediente-grid">
-          <label>Tipo<input [(ngModel)]="exp.tipo" /></label>
-          <label>Empresa<input [(ngModel)]="exp.empresa" /></label>
-          <label>Expediente<input [(ngModel)]="exp.expediente" /></label>
-          <label>Impacto<input [(ngModel)]="exp.impacto" /></label>
-          <label>Precio licitación<input [(ngModel)]="exp.precio_licitacion" /></label>
-          <label>Precio adjudicación<input [(ngModel)]="exp.precio_adjudicacion" /></label>
-          <label>Fecha fin expediente<input type="date" [(ngModel)]="exp.fecha_fin_expediente" /></label>
-        </div>
+        <section class="link-expediente-panel" *ngIf="showLinkExpedienteSelector">
+          <label class="drawer-search">
+            Buscar expediente existente
+            <input [(ngModel)]="linkExpedienteSearch" placeholder="DNA, empresa, tipo..." />
+          </label>
 
-        <section class="additional-block">
-          <div class="additional-header">
-            <strong>Campos adicionales del expediente</strong>
-            <button type="button" (click)="addDraftExpedienteAdditionalField(exp)">Añadir campo</button>
+          <div class="link-expediente-results" *ngIf="expedientesCatalogoDisponibles().length > 0; else noCatalogExpedientes">
+            <article class="link-expediente-item" *ngFor="let expediente of expedientesCatalogoDisponibles()">
+              <div>
+                <strong>{{ expediente.expediente || 'Sin expediente' }}</strong>
+                <p>{{ expediente.empresa || 'Sin empresa' }} · {{ expediente.precio_licitacion || '-' }} / {{ expediente.precio_adjudicacion || '-' }}</p>
+              </div>
+              <button *ngIf="canEdit()" type="button" class="secondary" (click)="linkExistingExpediente(expediente)">Enlazar</button>
+            </article>
           </div>
-          <div class="suggested-row">
-            <button
-              type="button"
-              *ngFor="let suggested of availableDraftExpedienteSuggestedKeys(exp)"
-              (click)="addDraftExpedienteSuggestedField(exp, suggested)"
-            >
-              + {{ suggested }}
-            </button>
-          </div>
-          <div class="additional-row" *ngFor="let key of draftExpedienteAdditionalKeys(exp)">
-            <input
-              class="field-key"
-              [ngModel]="key"
-              (ngModelChange)="renameDraftExpedienteAdditionalKey(exp, key, $event)"
-              placeholder="clave"
-            />
-            <input
-              class="field-value"
-              [ngModel]="exp.informacion_adicional[key]"
-              (ngModelChange)="updateDraftExpedienteAdditionalValue(exp, key, $event)"
-              placeholder="valor"
-            />
-            <button type="button" class="secondary" (click)="removeDraftExpedienteAdditionalField(exp, key)">
-              Eliminar
-            </button>
-          </div>
+
+          <ng-template #noCatalogExpedientes>
+            <p>No hay expedientes disponibles para enlazar con el filtro actual.</p>
+          </ng-template>
         </section>
-      </section>
-    </div>
 
-    <ng-template #noExpedientesDraft>
-      <p>No hay expedientes asociados a esta iniciativa.</p>
-    </ng-template>
-  </section>
+        <div class="expediente-stack" *ngIf="draftExpedientes().length > 0; else noExpedientesDraft">
+          <section class="expediente-card" *ngFor="let exp of draftExpedientes(); let i = index">
+            <div class="expediente-card-header">
+              <h5>Expediente {{ i + 1 }}</h5>
+              <button *ngIf="canEdit()" type="button" class="danger-outline" (click)="removeDraftExpediente(i)">Eliminar</button>
+            </div>
 
-  <section *ngIf="activeInitiativeTab === 'adicional'">
-    <section class="additional-block">
-      <div class="additional-header">
-        <strong>Información adicional</strong>
-        <div class="summary-actions">
-          <button type="button" (click)="addDraftAdditionalField()">Añadir campo</button>
-          <button type="button" (click)="openCommitmentPanelFromInitiative()">Añadir compromiso</button>
+            <div class="modal-grid expediente-grid">
+              <label>Tipo<input [(ngModel)]="exp.tipo" [readonly]="isConsulta()" /></label>
+              <label>Empresa<input [(ngModel)]="exp.empresa" [readonly]="isConsulta()" /></label>
+              <label>Expediente<input [(ngModel)]="exp.expediente" [readonly]="isConsulta()" /></label>
+              <label>Impacto<input [(ngModel)]="exp.impacto" [readonly]="isConsulta()" /></label>
+              <label>Precio licitación<input [(ngModel)]="exp.precio_licitacion" [readonly]="isConsulta()" /></label>
+              <label>Precio adjudicación<input [(ngModel)]="exp.precio_adjudicacion" [readonly]="isConsulta()" /></label>
+              <label>Fecha fin expediente<input type="date" [(ngModel)]="exp.fecha_fin_expediente" [disabled]="isConsulta()" /></label>
+            </div>
+
+            <section class="additional-block">
+              <div class="additional-header">
+                <strong>Campos adicionales del expediente</strong>
+                <button *ngIf="canEdit()" type="button" (click)="addDraftExpedienteAdditionalField(exp)">Añadir campo</button>
+              </div>
+              <div class="suggested-row" *ngIf="canEdit()">
+                <button
+                  type="button"
+                  *ngFor="let suggested of availableDraftExpedienteSuggestedKeys(exp)"
+                  (click)="addDraftExpedienteSuggestedField(exp, suggested)"
+                >
+                  + {{ suggested }}
+                </button>
+              </div>
+              <div class="additional-row" *ngFor="let key of draftExpedienteAdditionalKeys(exp)">
+                <input
+                  class="field-key"
+                  [ngModel]="key"
+                  [readonly]="isConsulta()"
+                  (ngModelChange)="renameDraftExpedienteAdditionalKey(exp, key, $event)"
+                  placeholder="clave"
+                />
+                <input
+                  class="field-value"
+                  [ngModel]="exp.informacion_adicional[key]"
+                  [readonly]="isConsulta()"
+                  (ngModelChange)="updateDraftExpedienteAdditionalValue(exp, key, $event)"
+                  placeholder="valor"
+                />
+                <button *ngIf="canEdit()" type="button" class="secondary" (click)="removeDraftExpedienteAdditionalField(exp, key)">
+                  Eliminar
+                </button>
+              </div>
+            </section>
+          </section>
         </div>
-      </div>
-      <div class="suggested-row">
-        <button
-          type="button"
-          *ngFor="let suggested of availableDraftSuggestedKeys()"
-          (click)="addDraftSuggestedField(suggested)"
-        >
-          + {{ suggested }}
-        </button>
-      </div>
-      <div class="additional-row" *ngFor="let key of draftAdditionalKeys()">
-        <input
-          class="field-key"
-          [ngModel]="key"
-          (ngModelChange)="renameDraftAdditionalKey(key, $event)"
-          placeholder="clave"
-        />
-        <input
-          class="field-value"
-          [ngModel]="initiativeDraft.informacion_adicional[key]"
-          (ngModelChange)="updateDraftAdditionalValue(key, $event)"
-          placeholder="valor"
-        />
-        <button class="secondary" type="button" (click)="removeDraftAdditionalField(key)">Eliminar</button>
-      </div>
+
+        <ng-template #noExpedientesDraft>
+          <p>No hay expedientes asociados a esta iniciativa.</p>
+        </ng-template>
+      </article>
     </section>
-  </section>
+
+    <section *ngIf="activeInitiativeTab === 'adicional'" class="initiative-pane">
+      <article class="modal-section-card">
+        <div class="additional-header">
+          <strong>Información adicional</strong>
+          <div class="summary-actions">
+            <button *ngIf="canEdit()" type="button" (click)="addDraftAdditionalField()">Añadir campo</button>
+            <button *ngIf="canEdit()" type="button" (click)="openCommitmentPanelFromInitiative()">Añadir compromiso</button>
+          </div>
+        </div>
+        <div class="suggested-row" *ngIf="canEdit()">
+          <button
+            type="button"
+            *ngFor="let suggested of availableDraftSuggestedKeys()"
+            (click)="addDraftSuggestedField(suggested)"
+          >
+            + {{ suggested }}
+          </button>
+        </div>
+        <div class="additional-row" *ngFor="let key of draftAdditionalKeys()">
+          <input
+            class="field-key"
+            [ngModel]="key"
+            [readonly]="isConsulta()"
+            (ngModelChange)="renameDraftAdditionalKey(key, $event)"
+            placeholder="clave"
+          />
+          <input
+            class="field-value"
+            [ngModel]="initiativeDraft.informacion_adicional[key]"
+            [readonly]="isConsulta()"
+            (ngModelChange)="updateDraftAdditionalValue(key, $event)"
+            placeholder="valor"
+          />
+          <button *ngIf="canEdit()" class="secondary" type="button" (click)="removeDraftAdditionalField(key)">Eliminar</button>
+        </div>
+      </article>
+    </section>
+  </div>
 
   <div class="modal-actions">
-    <button (click)="saveInitiativeChanges()" [disabled]="savingInitiative">
+    <button *ngIf="canEdit()" class="primary" (click)="saveInitiativeChanges()" [disabled]="savingInitiative">
       {{ savingInitiative ? 'Guardando...' : 'Guardar en BBDD' }}
     </button>
-    <button class="secondary" (click)="closeInitiativeModal()" [disabled]="savingInitiative">Cancelar</button>
+    <button class="secondary" (click)="closeInitiativeModal()" [disabled]="savingInitiative">{{ canEdit() ? 'Cancelar' : 'Cerrar' }}</button>
   </div>
 </section>
