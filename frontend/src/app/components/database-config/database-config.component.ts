@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 
+import { AuthService } from '../../services/auth.service';
 import { ConnectionStateService } from '../../services/connection-state.service';
 import { DatabaseStatus, MySQLConfig, OracleConfig } from '../../services/database.service';
 
@@ -42,7 +43,8 @@ export class DatabaseConfigComponent implements OnInit {
 
   constructor(
     private readonly router: Router,
-    private readonly connectionState: ConnectionStateService
+    private readonly connectionState: ConnectionStateService,
+    private readonly authService: AuthService
   ) {}
 
   /**
@@ -77,7 +79,15 @@ export class DatabaseConfigComponent implements OnInit {
     this.connecting = true;
     this.message = '';
 
+    console.log('');
+    console.log('🗄️  [DATABASE] Intentando conectar a BD...');
+    console.log(`   📌 Tipo: ${this.selectedType.toUpperCase()}`);
+
     if (this.selectedType === 'mysql') {
+      console.log(`   🖥️  Host: ${this.mysqlHost}:${this.mysqlPort}`);
+      console.log(`   👤 Usuario: ${this.mysqlUser}`);
+      console.log(`   📊 Base: ${this.mysqlDatabase}`);
+      
       const config: MySQLConfig = {
         host: this.mysqlHost,
         port: this.mysqlPort,
@@ -87,19 +97,36 @@ export class DatabaseConfigComponent implements OnInit {
       };
       this.connectionState.connectMySQL(config).subscribe({
         next: () => {
+          console.log('   ✅ Conexión a MySQL EXITOSA');
           this.messageType = 'success';
           this.message = 'Conexión a MySQL exitosa';
           this.checkStatus();
           this.connecting = false;
-          this.router.navigate(['/roadmaps']);
+          console.log('');
+          console.log('📌 PASO 3: Redirigir según rol');
+          const currentUser = this.authService.currentUser;
+          if (currentUser?.rol === 'ADMIN') {
+            console.log('   👑 ADMIN');
+            console.log('   ➡️  NAVEGANDO A: /admin/users');
+          } else {
+            console.log(`   📊 ${currentUser?.rol}`);
+            console.log('   ➡️  NAVEGANDO A: /roadmaps');
+          }
+          this.navigateAfterConnection();
         },
         error: (err) => {
+          console.log('   ❌ Error conectando MySQL');
+          console.log(`   📝 ${err.error?.message || err.message}`);
           this.messageType = 'error';
           this.message = `Error: ${err.error?.message || err.message}`;
           this.connecting = false;
         }
       });
     } else {
+      console.log(`   🖥️  Host: ${this.oracleHost}:${this.oraclePort}`);
+      console.log(`   👤 Usuario: ${this.oracleUser}`);
+      console.log(`   📊 SID: ${this.oracleSid}`);
+      
       const config: OracleConfig = {
         host: this.oracleHost,
         port: this.oraclePort,
@@ -109,18 +136,43 @@ export class DatabaseConfigComponent implements OnInit {
       };
       this.connectionState.connectOracle(config).subscribe({
         next: () => {
+          console.log('   ✅ Conexión a Oracle EXITOSA');
           this.messageType = 'success';
           this.message = 'Conexión a Oracle exitosa';
           this.checkStatus();
           this.connecting = false;
-          this.router.navigate(['/roadmaps']);
+          console.log('');
+          console.log('📌 PASO 3: Redirigir según rol');
+          const currentUser = this.authService.currentUser;
+          if (currentUser?.rol === 'ADMIN') {
+            console.log('   👑 ADMIN');
+            console.log('   ➡️  NAVEGANDO A: /admin/users');
+          } else {
+            console.log(`   📊 ${currentUser?.rol}`);
+            console.log('   ➡️  NAVEGANDO A: /roadmaps');
+          }
+          this.navigateAfterConnection();
         },
         error: (err) => {
+          console.log('   ❌ Error conectando Oracle');
+          console.log(`   📝 ${err.error?.message || err.message}`);
           this.messageType = 'error';
           this.message = `Error: ${err.error?.message || err.message}`;
           this.connecting = false;
         }
       });
+    }
+  }
+
+  /**
+   * Navigates to appropriate destination based on user role.
+   */
+  private navigateAfterConnection(): void {
+    const currentUser = this.authService.currentUser;
+    if (currentUser?.rol === 'ADMIN') {
+      this.router.navigate(['/admin/users']);
+    } else {
+      this.router.navigate(['/roadmaps']);
     }
   }
 

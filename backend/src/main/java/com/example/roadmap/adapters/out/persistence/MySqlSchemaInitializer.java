@@ -126,6 +126,54 @@ public final class MySqlSchemaInitializer {
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
                 """);
 
+            // Tablas de autenticación y autorización
+            st.execute("""
+                CREATE TABLE IF NOT EXISTS usuarios (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    username VARCHAR(100) NOT NULL UNIQUE,
+                    password_hash VARCHAR(255),
+                    rol ENUM('ADMIN', 'GESTION', 'CONSULTA') NOT NULL DEFAULT 'CONSULTA',
+                    activo BOOLEAN NOT NULL DEFAULT TRUE,
+                    must_change_password BOOLEAN NOT NULL DEFAULT TRUE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    created_by VARCHAR(100),
+                    updated_by VARCHAR(100),
+                    INDEX idx_username (username),
+                    INDEX idx_rol (rol),
+                    INDEX idx_activo (activo)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                """);
+
+            st.execute("""
+                CREATE TABLE IF NOT EXISTS sesiones (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    usuario_id INT NOT NULL,
+                    token VARCHAR(500) NOT NULL UNIQUE,
+                    ip_address VARCHAR(45),
+                    user_agent VARCHAR(500),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    expires_at TIMESTAMP NOT NULL,
+                    estado ENUM('ACTIVA', 'EXPIRADA', 'REVOCADA') NOT NULL DEFAULT 'ACTIVA',
+                    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+                    INDEX idx_usuario_id (usuario_id),
+                    INDEX idx_token (token),
+                    INDEX idx_estado (estado),
+                    INDEX idx_expires_at (expires_at)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                """);
+
+            // Bootstrap usuario admin inicial
+            st.execute("""
+                INSERT INTO usuarios (username, password_hash, rol, activo, must_change_password, created_by, updated_by)
+                VALUES ('admin', NULL, 'ADMIN', TRUE, TRUE, 'SYSTEM', 'SYSTEM')
+                ON DUPLICATE KEY UPDATE
+                    rol = 'ADMIN',
+                    activo = TRUE,
+                    must_change_password = TRUE,
+                    updated_by = 'SYSTEM'
+                """);
+
             Set<String> missingIniciativas = findMissingColumns(
                 connection,
                 "iniciativas",
@@ -168,6 +216,29 @@ public final class MySqlSchemaInitializer {
             if (!missingIniciativaExpediente.isEmpty()) {
                 return "Esquema de enlaces iniciativa-expediente desactualizado. Faltan columnas: "
                     + String.join(", ", missingIniciativaExpediente)
+                    + ". Ejecuta migración SQL en Database/migrations antes de continuar.";
+            }
+
+            // Validar esquema de autenticación y autorización
+            Set<String> missingUsuarios = findMissingColumns(
+                connection,
+                "usuarios",
+                Set.of("id", "username", "password_hash", "rol", "activo", "must_change_password", "created_by", "updated_by")
+            );
+            if (!missingUsuarios.isEmpty()) {
+                return "Esquema de usuarios desactualizado. Faltan columnas: "
+                    + String.join(", ", missingUsuarios)
+                    + ". Ejecuta migración SQL en Database/migrations antes de continuar.";
+            }
+
+            Set<String> missingSesiones = findMissingColumns(
+                connection,
+                "sesiones",
+                Set.of("id", "usuario_id", "token", "ip_address", "user_agent", "created_at", "expires_at", "estado")
+            );
+            if (!missingSesiones.isEmpty()) {
+                return "Esquema de sesiones desactualizado. Faltan columnas: "
+                    + String.join(", ", missingSesiones)
                     + ". Ejecuta migración SQL en Database/migrations antes de continuar.";
             }
             return null;

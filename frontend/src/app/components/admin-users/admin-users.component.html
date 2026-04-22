@@ -1,0 +1,146 @@
+<div class="admin-users-container">
+  <h2>Gestión de Usuarios</h2>
+
+  <div class="error-message" *ngIf="error">{{ error }}</div>
+
+  <div class="actions">
+    <button class="btn btn-primary" (click)="showCreateForm = !showCreateForm">
+      {{ showCreateForm ? 'Cancelar' : 'Crear Usuario' }}
+    </button>
+    <button class="btn btn-secondary" (click)="loadUsers()">Recargar</button>
+  </div>
+
+  <!-- Create User Form -->
+  <div class="create-form" *ngIf="showCreateForm">
+    <h3>Crear Nuevo Usuario</h3>
+    <form (ngSubmit)="createUser()" #createForm="ngForm">
+      <div class="form-group">
+        <label for="newUsername">Usuario:</label>
+        <input
+          id="newUsername"
+          type="text"
+          [(ngModel)]="newUser.username"
+          name="username"
+          required
+          #username="ngModel">
+        <div class="error" *ngIf="username.invalid && username.touched">
+          Usuario requerido
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="newPassword">Contraseña:</label>
+        <input
+          id="newPassword"
+          type="password"
+          [(ngModel)]="newUser.password"
+          name="password"
+          required
+          #password="ngModel">
+        <div class="error" *ngIf="password.invalid && password.touched">
+          Contraseña requerida
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="newRol">Rol:</label>
+        <select
+          id="newRol"
+          [(ngModel)]="newUser.rol"
+          name="rol"
+          required>
+          <option value="CONSULTA">Consulta</option>
+          <option value="GESTION">Gestión</option>
+          <option value="ADMIN">Admin</option>
+        </select>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" [disabled]="createForm.invalid || loading">
+          {{ loading ? 'Creando...' : 'Crear' }}
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="showCreateForm = false">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Users List -->
+  <div class="users-list" *ngIf="!loading">
+    <table class="users-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Usuario</th>
+          <th>Rol</th>
+          <th>¿Cambiar Contraseña?</th>
+          <th>Creado</th>
+          <th>Actualizado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of usuarios">
+          <td>{{ user.usuarioId }}</td>
+          <td>
+            <span *ngIf="editingUser?.usuarioId !== user.usuarioId">{{ user.username }}</span>
+            <input
+              *ngIf="editingUser?.usuarioId === user.usuarioId"
+              type="text"
+              [(ngModel)]="editingUser.username"
+              class="edit-input">
+          </td>
+          <td>
+            <span *ngIf="editingUser?.usuarioId !== user.usuarioId">{{ user.rol }}</span>
+            <select
+              *ngIf="editingUser?.usuarioId === user.usuarioId"
+              [(ngModel)]="editingUser.rol"
+              class="edit-input">
+              <option value="CONSULTA">Consulta</option>
+              <option value="GESTION">Gestión</option>
+              <option value="ADMIN">Admin</option>
+            </select>
+          </td>
+          <td>{{ user.mustChangePassword ? 'Sí' : 'No' }}</td>
+          <td>{{ user.createdAt | date:'short' }}</td>
+          <td>{{ user.updatedAt | date:'short' }}</td>
+          <td class="actions-cell">
+            <button
+              *ngIf="editingUser?.usuarioId !== user.usuarioId"
+              class="btn btn-small btn-edit"
+              (click)="startEdit(user)">
+              Editar
+            </button>
+            <button
+              *ngIf="editingUser?.usuarioId === user.usuarioId"
+              class="btn btn-small btn-save"
+              (click)="updateUser(editingUser)">
+              Guardar
+            </button>
+            <button
+              *ngIf="editingUser?.usuarioId === user.usuarioId"
+              class="btn btn-small btn-cancel"
+              (click)="cancelEdit()">
+              Cancelar
+            </button>
+            <button
+              class="btn btn-small btn-reset"
+              (click)="resetPassword(user.usuarioId)">
+              Reset Pass
+            </button>
+            <button
+              class="btn btn-small btn-delete"
+              (click)="deleteUser(user.usuarioId)">
+              Eliminar
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="loading" *ngIf="loading">
+    Cargando usuarios...
+  </div>
+</div>

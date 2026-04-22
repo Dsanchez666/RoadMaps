@@ -1,7 +1,8 @@
 package com.example.roadmap;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Properties;
 
@@ -43,7 +44,7 @@ public class DatabaseConnection {
         }
     }
 
-    private static Connection connection;
+    private static HikariDataSource dataSource;
     private static DatabaseType currentType = DatabaseType.MYSQL;
 
     private static final Config mysqlConfig = new Config(DatabaseType.MYSQL);
@@ -120,77 +121,75 @@ public class DatabaseConnection {
     public static Connection connect() throws Exception {
         Config config = getCurrentConfig();
 
-        // Routing rule: one entry point delegates to the engine-specific strategy.
+        // Close existing pool before recreating it.
+        if (dataSource != null && !dataSource.isClosed()) {
+            dataSource.close();
+            dataSource = null;
+        }
+
         if (currentType == DatabaseType.ORACLE) {
-            return connectToOracle(config);
+            initializeOracleDataSource(config);
         } else {
-            return connectToMySQL(config);
+            initializeMySqlDataSource(config);
+        }
+
+        if (dataSource == null) {
+            return null;
+        }
+
+        try {
+            Connection conn = dataSource.getConnection();
+            System.out.println("Connected to " + currentType + ": " + config);
+            return conn;
+        } catch (SQLException e) {
+            System.err.println("Connection failed: " + e.getMessage());
+            return null;
         }
     }
 
-    /**
-     * Opens a MySQL JDBC connection.
-     *
-     * @param config Active MySQL configuration.
-     * @return JDBC connection or null when connection cannot be established.
-     * @throws Exception Driver lookup or JDBC errors.
-     */
-    private static Connection connectToMySQL(Config config) throws Exception {
+    private static void initializeMySqlDataSource(Config config) throws Exception {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
         } catch (ClassNotFoundException e) {
             System.out.println("MySQL JDBC driver not found. Using JSON storage only.");
-            return null;
+            return;
         }
 
-        try {
-            String url = "jdbc:mysql://" + config.host + ":" + config.port + "/" + config.database +
-                        "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&useUnicode=true&characterEncoding=UTF-8";
+        HikariConfig hikariConfig = new HikariConfig();
+        hikariConfig.setJdbcUrl("jdbc:mysql://" + config.host + ":" + config.port + "/" + config.database
+            + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&useUnicode=true&characterEncoding=UTF-8");
+        hikariConfig.setUsername(config.user);
+        hikariConfig.setPassword(config.password);
+        hikariConfig.setMaximumPoolSize(10);
+        hikariConfig.setMinimumIdle(2);
+        hikariConfig.setPoolName("roadmap-mysql-pool");
+        hikariConfig.addDataSourceProperty("cachePrepStmts", "true");
+        hikariConfig.addDataSourceProperty("prepStmtCacheSize", "250");
+        hikariConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
 
-            Properties props = new Properties();
-            props.setProperty("user", config.user);
-            props.setProperty("password", config.password);
-            props.setProperty("useUnicode", "true");
-            props.setProperty("characterEncoding", "UTF-8");
-
-            connection = DriverManager.getConnection(url, props);
-            System.out.println("Connected to MySQL: " + config);
-            return connection;
-        } catch (SQLException e) {
-            System.err.println("MySQL connection failed: " + e.getMessage());
-            return null;
-        }
+        dataSource = new HikariDataSource(hikariConfig);
     }
 
-    /**
-     * Opens an Oracle JDBC connection using SID format.
-     *
-     * @param config Active Oracle configuration.
-     * @return JDBC connection or null when connection cannot be established.
-     * @throws Exception Driver lookup or JDBC errors.
-     */
-    private static Connection connectToOracle(Config config) throws Exception {
+    private static void initializeOracleDataSource(Config config) throws Exception {
         try {
             Class.forName("oracle.jdbc.driver.OracleDriver");
         } catch (ClassNotFoundException e) {
             System.out.println("Oracle JDBC driver not found. Using JSON storage only.");
-            return null;
+            return;
         }
 
-        try {
-            String url = "jdbc:oracle:thin:@" + config.host + ":" + config.port + ":" + config.sid;
+        HikariConfig hikariConfig = new HikariConfig();
+        hikariConfig.setJdbcUrl("jdbc:oracle:thin:@" + config.host + ":" + config.port + ":" + config.sid);
+        hikariConfig.setUsername(config.user);
+        hikariConfig.setPassword(config.password);
+        hikariConfig.setMaximumPoolSize(10);
+        hikariConfig.setMinimumIdle(2);
+        hikariConfig.setPoolName("roadmap-oracle-pool");
+        hikariConfig.addDataSourceProperty("cachePrepStmts", "true");
+        hikariConfig.addDataSourceProperty("prepStmtCacheSize", "250");
+        hikariConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
 
-            Properties props = new Properties();
-            props.setProperty("user", config.user);
-            props.setProperty("password", config.password);
-
-            connection = DriverManager.getConnection(url, props);
-            System.out.println("Connected to Oracle: " + config);
-            return connection;
-        } catch (SQLException e) {
-            System.err.println("Oracle connection failed: " + e.getMessage());
-            return null;
-        }
+        dataSource = new HikariDataSource(hikariConfig);
     }
 
     /**
@@ -203,41 +202,45 @@ public class DatabaseConnection {
     }
 
     /**
-     * Returns current active JDBC connection reference.
+     * Returns a pooled JDBC connection from the active data source.
      *
-     * @return Connection instance or null.
+     * @return Connection instance or null when pool is not configured.
      */
     public static Connection getConnection() {
-        return connection;
+        if (dataSource == null || dataSource.isClosed()) {
+            return null;
+        }
+        try {
+            return dataSource.getConnection();
+        } catch (SQLException e) {
+            System.err.println("Error obtaining pooled connection: " + e.getMessage());
+            return null;
+        }
     }
 
     /**
-     * Closes active connection if present.
+     * Closes the current connection pool.
      */
     public static void disconnect() {
-        if (connection != null) {
+        if (dataSource != null) {
             try {
-                connection.close();
-                connection = null;
-                System.out.println("Disconnected from database.");
-            } catch (SQLException e) {
-                System.err.println("Error closing connection: " + e.getMessage());
+                dataSource.close();
+            } catch (Exception e) {
+                System.err.println("Error closing connection pool: " + e.getMessage());
+            } finally {
+                dataSource = null;
             }
+            System.out.println("Disconnected from database.");
         }
     }
 
     /**
-     * Checks if active connection is open.
+     * Checks whether the current data source is available.
      *
-     * @return true when connection exists and is not closed.
+     * @return true when the pool exists and is not closed.
      */
     public static boolean isConnected() {
-        if (connection == null) return false;
-        try {
-            return !connection.isClosed();
-        } catch (SQLException e) {
-            return false;
-        }
+        return dataSource != null && !dataSource.isClosed();
     }
 
     /**

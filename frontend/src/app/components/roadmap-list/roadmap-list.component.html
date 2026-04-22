@@ -1,9 +1,11 @@
 <section class="toolbar">
   <h2>Roadmaps</h2>
-</section>
-
-<section class="actions-box">
-  <app-roadmap-create></app-roadmap-create>
+  <div class="role-badge">
+    👤 {{ authService.currentUser?.username }}
+    <span [ngClass]="'role-' + (authService.currentUser?.rol || '').toLowerCase()">
+      {{ authService.currentUser?.rol }}
+    </span>
+  </div>
 </section>
 
 <div *ngIf="connectionError" class="error">
@@ -13,9 +15,9 @@
   </button>
 </div>
 
-<div *ngIf="loading" class="loading">Cargando...</div>
+<div *ngIf="loading" class="loading">Cargando roadmaps...</div>
 
-<section class="search-row">
+<section *ngIf="!loading && !connectionError" class="search-row">
   <input
     type="text"
     placeholder="Buscar por título o descripción"
@@ -29,12 +31,19 @@
     <h3>{{ r.title }}</h3>
     <p>{{ r.description || 'Sin descripción' }}</p>
     <div class="actions">
-      <button (click)="ver(r)">Ver</button>
-      <button (click)="editar(r)">Editar</button>
+      <button class="btn-view" (click)="ver(r)">👁️ Ver</button>
+      <button 
+        *ngIf="canEdit()" 
+        class="btn-edit"
+        (click)="editar(r)"
+      >
+        ✏️ Editar
+      </button>
+      <span *ngIf="isConsulta()" class="read-only-badge">Solo lectura</span>
     </div>
   </article>
 </section>
 
-<div *ngIf="!loading && !connectionError && filteredRoadmaps.length === 0" class="loading">
+<div *ngIf="!loading && !connectionError && filteredRoadmaps.length === 0" class="empty-state">
   No hay roadmaps para mostrar.
 </div>

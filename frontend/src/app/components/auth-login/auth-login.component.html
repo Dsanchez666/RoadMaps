@@ -1,0 +1,19 @@
+<section class="auth-page">
+  <h2>Iniciar sesión</h2>
+
+  <form (ngSubmit)="login()" class="auth-form">
+    <label>
+      Usuario
+      <input type="text" [(ngModel)]="username" name="username" required autocomplete="username" />
+    </label>
+
+    <label>
+      Contraseña
+      <input type="password" [(ngModel)]="password" name="password" autocomplete="current-password" />
+    </label>
+
+    <button type="submit" [disabled]="loading">{{ loading ? 'Ingresando...' : 'Ingresar' }}</button>
+  </form>
+
+  <div class="error" *ngIf="error">{{ error }}</div>
+</section>

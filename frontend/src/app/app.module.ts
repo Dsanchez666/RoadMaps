@@ -1,4 +1,4 @@
-import { HttpClientModule } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import { NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { BrowserModule } from '@angular/platform-browser';
@@ -10,6 +10,10 @@ import { RoadmapEditComponent } from './components/roadmap-edit/roadmap-edit.com
 import { RoadmapCreateComponent } from './components/roadmap-create/roadmap-create.component';
 import { RoadmapListComponent } from './components/roadmap-list/roadmap-list.component';
 import { RoadmapViewComponent } from './components/roadmap-view/roadmap-view.component';
+import { AuthLoginComponent } from './components/auth-login/auth-login.component';
+import { AuthFirstPasswordComponent } from './components/auth-first-password/auth-first-password.component';
+import { AdminUsersComponent } from './components/admin-users/admin-users.component';
+import { AuthInterceptor } from './services/auth.interceptor';
 
 /**
  * Root Angular module for the Roadmaps frontend.
@@ -20,14 +24,28 @@ import { RoadmapViewComponent } from './components/roadmap-view/roadmap-view.com
 @NgModule({
   declarations: [
     AppComponent,
-    RoadmapListComponent,
     RoadmapCreateComponent,
     DatabaseConfigComponent,
     RoadmapViewComponent,
     RoadmapEditComponent
   ],
-  imports: [BrowserModule, HttpClientModule, FormsModule, AppRoutingModule],
-  providers: [],
+  imports: [
+    BrowserModule,
+    HttpClientModule,
+    FormsModule,
+    AppRoutingModule,
+    RoadmapListComponent,
+    AuthLoginComponent,
+    AuthFirstPasswordComponent,
+    AdminUsersComponent
+  ],
+  providers: [
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuthInterceptor,
+      multi: true
+    }
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule {}
